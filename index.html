@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tap to Trade - Crypto Perps</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #root {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%);
+      position: relative;
+    }
+
+    /* Glowing animations */
+    @keyframes glow {
+      0%, 100% { filter: drop-shadow(0 0 8px currentColor); }
+      50% { filter: drop-shadow(0 0 16px currentColor); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+
+    /* Layout */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(10, 10, 20, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(138, 43, 226, 0.3);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 12px;
+      transition: all 0.3s;
+      color: #888;
+    }
+
+    .nav-item.active {
+      color: #ff00ff;
+      background: rgba(255, 0, 255, 0.1);
+    }
+
+    .nav-icon {
+      font-size: 24px;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Price Chart */
+    .chart-container {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(138, 43, 226, 0.2);
+    }
+
+    .price-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .price-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .price-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #00ff88;
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    }
+
+    .live-indicator {
+      background: #ff0055;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+
+    .chart-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Trade Controls */
+    .trade-controls {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(138, 43, 226, 0.2);
+    }
+
+    .control-section {
+      margin-bottom: 16px;
+    }
+
+    .control-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .option-button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .option-button.active {
+      background: linear-gradient(135deg, #8a2be2, #ff00ff);
+      border-color: #ff00ff;
+      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+
+    .option-button:active {
+      transform: scale(0.95);
+    }
+
+    /* Open Trades */
+    .open-trades {
+      margin-top: 16px;
+    }
+
+    .trade-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .trade-card.long {
+      border-left: 4px solid #00ff88;
+    }
+
+    .trade-card.short {
+      border-left: 4px solid #ff0055;
+    }
+
+    .trade-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .trade-direction {
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .trade-direction.long {
+      color: #00ff88;
+    }
+
+    .trade-direction.short {
+      color: #ff0055;
+    }
+
+    .countdown {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .trade-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .detail-label {
+      color: #888;
+    }
+
+    .detail-value {
+      font-weight: 600;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(138, 43, 226, 0.2);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .stat-value.positive {
+      color: #00ff88;
+    }
+
+    .stat-value.negative {
+      color: #ff0055;
+    }
+
+    .stat-value.neutral {
+      color: #8a2be2;
+    }
+
+    /* Overlay Feedback */
+    .feedback-overlay {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .feedback-overlay.win {
+      background: radial-gradient(circle, rgba(0, 255, 136, 0.3) 0%, transparent 70%);
+      animation: flashWin 0.5s ease-out;
+    }
+
+    .feedback-overlay.loss {
+      background: radial-gradient(circle, rgba(255, 0, 85, 0.3) 0%, transparent 70%);
+      animation: flashLoss 0.5s ease-out;
+    }
+
+    @keyframes flashWin {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes flashLoss {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .feedback-amount {
+      font-size: 64px;
+      font-weight: 900;
+      text-shadow: 0 0 30px currentColor;
+      animation: feedbackPop 0.6s ease-out;
+    }
+
+    .feedback-streak {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 16px;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+
+    @keyframes feedbackPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    /* Confetti */
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #ff00ff;
+      animation: confettiFall 1s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Leaderboard */
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .leaderboard-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid rgba(138, 43, 226, 0.2);
+    }
+
+    .leaderboard-item.top3 {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(138, 43, 226, 0.1));
+      border-color: #ffd700;
+    }
+
+    .rank {
+      font-size: 24px;
+      font-weight: 900;
+      width: 40px;
+      text-align: center;
+    }
+
+    .rank.gold { color: #ffd700; }
+    .rank.silver { color: #c0c0c0; }
+    .rank.bronze { color: #cd7f32; }
+
+    .player-info {
+      flex: 1;
+    }
+
+    .player-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .player-stats {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* Profile */
+    .profile-header {
+      text-align: center;
+      padding: 32px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      margin-bottom: 16px;
+    }
+
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8a2be2, #ff00ff);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+    }
+
+    .username {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .wallet-address {
+      font-size: 12px;
+      color: #888;
+      font-family: monospace;
+    }
+
+    .settings-section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .toggle {
+      width: 50px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .toggle.active {
+      background: linear-gradient(135deg, #8a2be2, #ff00ff);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+    }
+
+    .toggle.active .toggle-knob {
+      left: 24px;
+    }
+
+    .connect-button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #8a2be2, #ff00ff);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(138, 43, 226, 0.4);
+    }
+
+    .connect-button:active {
+      transform: scale(0.98);
+    }
+
+    /* History */
+    .history-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .filter-button {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-button.active {
+      background: linear-gradient(135deg, #8a2be2, #ff00ff);
+      border-color: #ff00ff;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .history-item.win {
+      border-left: 3px solid #00ff88;
+    }
+
+    .history-item.loss {
+      border-left: 3px solid #ff0055;
+    }
+
+    .chart-marker {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: glow 2s infinite;
+      z-index: 10;
+    }
+
+    .chart-marker.long {
+      background: #00ff88;
+      color: #00ff88;
+    }
+
+    .chart-marker.short {
+      background: #ff0055;
+      color: #ff0055;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #ff00ff;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: #888;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // Utility: Generate mock price movement
+    function generatePrice(prevPrice, trend = 0.0002) {
+      const noise = (Math.random() - 0.5) * 5;
+      const trendComponent = trend * prevPrice;
+      return prevPrice + trendComponent + noise;
+    }
+
+    // Utility: Format currency
+    function formatCurrency(value) {
+      return `$${Math.abs(value).toFixed(2)}`;
+    }
+
+    // Utility: Format time
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Main App Component
+    function App() {
+      const [activeTab, setActiveTab] = useState('trade');
+      const [currentPrice, setCurrentPrice] = useState(2400);
+      const [priceSeries, setPriceSeries] = useState([2400]);
+      const [balance, setBalance] = useState(1000);
+      const [streak, setStreak] = useState(0);
+      const [stats, setStats] = useState({ wins: 0, losses: 0, plToday: 0 });
+      const [openTrades, setOpenTrades] = useState([]);
+      const [closedTrades, setClosedTrades] = useState([]);
+      const [tradeSize, setTradeSize] = useState(50);
+      const [expiry, setExpiry] = useState(60);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [proMode, setProMode] = useState(false);
+      const [walletConnected, setWalletConnected] = useState(false);
+      const [feedback, setFeedback] = useState(null);
+      const [chartMarkers, setChartMarkers] = useState([]);
+
+      const chartRef = useRef(null);
+      const canvasRef = useRef(null);
+      const priceIntervalRef = useRef(null);
+      const tradeTimersRef = useRef({});
+
+      // Initialize price feed
+      useEffect(() => {
+        priceIntervalRef.current = setInterval(() => {
+          setCurrentPrice(prev => {
+            const newPrice = generatePrice(prev);
+            setPriceSeries(series => [...series.slice(-60), newPrice]);
+            return newPrice;
+          });
+        }, 1000);
+
+        return () => {
+          if (priceIntervalRef.current) {
+            clearInterval(priceIntervalRef.current);
+          }
+        };
+      }, []);
+
+      // Draw chart
+      useEffect(() => {
+        if (!canvasRef.current || priceSeries.length < 2) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const width = rect.width;
+        const height = rect.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Calculate price range
+        const prices = priceSeries.slice(-60);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const priceRange = maxPrice - minPrice || 10;
+        const padding = priceRange * 0.1;
+
+        // Draw grid
+        ctx.strokeStyle = 'rgba(138, 43, 226, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+          const y = (height / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+
+        // Draw price line
+        const xStep = width / (prices.length - 1);
+
+        // Gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(138, 43, 226, 0.3)');
+        gradient.addColorStop(1, 'rgba(138, 43, 226, 0)');
+
+        ctx.beginPath();
+        prices.forEach((price, i) => {
+          const x = i * xStep;
+          const y = height - ((price - minPrice + padding) / (priceRange + 2 * padding)) * height;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Draw line
+        ctx.beginPath();
+        prices.forEach((price, i) => {
+          const x = i * xStep;
+          const y = height - ((price - minPrice + padding) / (priceRange + 2 * padding)) * height;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.strokeStyle = '#8a2be2';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw current price line
+        const currentY = height - ((currentPrice - minPrice + padding) / (priceRange + 2 * padding)) * height;
+        ctx.beginPath();
+        ctx.moveTo(0, currentY);
+        ctx.lineTo(width, currentY);
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+      }, [priceSeries, currentPrice]);
+
+      // Handle chart tap
+      const handleChartTap = useCallback((e) => {
+        if (!chartRef.current) return;
+
+        const rect = chartRef.current.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const tapYPercent = y / rect.height;
+
+        // Calculate price at tap location
+        const prices = priceSeries.slice(-60);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const priceRange = maxPrice - minPrice || 10;
+        const padding = priceRange * 0.1;
+
+        const tappedPrice = maxPrice + padding - (tapYPercent * (priceRange + 2 * padding));
+        const direction = tappedPrice > currentPrice ? 'long' : 'short';
+
+        // Create new trade
+        const tradeId = Date.now();
+        const trade = {
+          id: tradeId,
+          direction,
+          size: tradeSize,
+          leverage: 5,
+          entry: currentPrice,
+          target: tappedPrice,
+          expiry: expiry,
+          remainingTime: expiry,
+          openTime: new Date().toISOString(),
+        };
+
+        setOpenTrades(prev => [...prev, trade]);
+
+        // Add chart marker
+        setChartMarkers(prev => [...prev, {
+          id: trade.id,
+          y: y,
+          direction,
+        }]);
+
+        // Vibrate if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+
+        // Start countdown timer
+        const timerId = setInterval(() => {
+          setOpenTrades(trades => {
+            const updatedTrades = trades.map(t => {
+              if (t.id === tradeId) {
+                const newTime = t.remainingTime - 1;
+                if (newTime <= 0) {
+                  // Settle trade - schedule it to run after state update
+                  setTimeout(() => settleTrade(t), 0);
+                  clearInterval(timerId);
+                  delete tradeTimersRef.current[tradeId];
+                  return null;
+                }
+                return { ...t, remainingTime: newTime };
+              }
+              return t;
+            }).filter(Boolean);
+            return updatedTrades;
+          });
+        }, 1000);
+
+        tradeTimersRef.current[tradeId] = timerId;
+
+      }, [chartRef, currentPrice, priceSeries, tradeSize, expiry]);
+
+      // Settle trade
+      const settleTrade = useCallback((trade) => {
+        // Get current price from state
+        setCurrentPrice(finalPrice => {
+          let isWin = false;
+
+          if (trade.direction === 'long') {
+            isWin = finalPrice > trade.entry;
+          } else {
+            isWin = finalPrice < trade.entry;
+          }
+
+          const pnl = isWin ? trade.size * 0.85 : -trade.size;
+
+          // Update balance
+          setBalance(prev => prev + pnl);
+
+          // Update streak
+          setStreak(prev => isWin ? prev + 1 : 0);
+
+          // Update stats
+          setStats(prev => ({
+            wins: isWin ? prev.wins + 1 : prev.wins,
+            losses: isWin ? prev.losses : prev.losses + 1,
+            plToday: prev.plToday + pnl,
+          }));
+
+          // Add to closed trades
+          const closedTrade = {
+            ...trade,
+            exit: finalPrice,
+            pnl,
+            isWin,
+            closeTime: new Date().toISOString(),
+          };
+          setClosedTrades(prev => [closedTrade, ...prev]);
+
+          // Remove marker
+          setChartMarkers(prev => prev.filter(m => m.id !== trade.id));
+
+          // Show feedback
+          showFeedback(isWin, pnl);
+
+          // Vibrate
+          if (navigator.vibrate) {
+            if (isWin) {
+              navigator.vibrate([100, 50, 100]);
+            } else {
+              navigator.vibrate(200);
+            }
+          }
+
+          return finalPrice; // Return unchanged price
+        });
+      }, []);
+
+      // Show feedback overlay
+      const showFeedback = (isWin, pnl) => {
+        setFeedback({ isWin, pnl });
+
+        // Create confetti for wins
+        if (isWin) {
+          for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+              const confetti = document.createElement('div');
+              confetti.className = 'confetti';
+              confetti.style.left = Math.random() * 100 + '%';
+              confetti.style.top = '50%';
+              confetti.style.background = ['#ff00ff', '#00ff88', '#ffd700', '#8a2be2'][Math.floor(Math.random() * 4)];
+              document.querySelector('.feedback-overlay').appendChild(confetti);
+              setTimeout(() => confetti.remove(), 1000);
+            }, i * 20);
+          }
+        }
+
+        setTimeout(() => setFeedback(null), 600);
+      };
+
+      // Cleanup on unmount
+      useEffect(() => {
+        return () => {
+          Object.values(tradeTimersRef.current).forEach(clearInterval);
+        };
+      }, []);
+
+      // Render tabs
+      const renderTabContent = () => {
+        switch (activeTab) {
+          case 'trade':
+            return <TradeTab
+              currentPrice={currentPrice}
+              priceSeries={priceSeries}
+              chartRef={chartRef}
+              canvasRef={canvasRef}
+              handleChartTap={handleChartTap}
+              tradeSize={tradeSize}
+              setTradeSize={setTradeSize}
+              expiry={expiry}
+              setExpiry={setExpiry}
+              openTrades={openTrades}
+              chartMarkers={chartMarkers}
+            />;
+          case 'portfolio':
+            return <PortfolioTab
+              balance={balance}
+              stats={stats}
+              openTrades={openTrades}
+              closedTrades={closedTrades}
+            />;
+          case 'leaderboard':
+            return <LeaderboardTab />;
+          case 'profile':
+            return <ProfileTab
+              soundEnabled={soundEnabled}
+              setSoundEnabled={setSoundEnabled}
+              proMode={proMode}
+              setProMode={setProMode}
+              walletConnected={walletConnected}
+              setWalletConnected={setWalletConnected}
+            />;
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <div className="app-container">
+          {feedback && (
+            <div className={`feedback-overlay ${feedback.isWin ? 'win' : 'loss'}`}>
+              <div className="feedback-amount" style={{ color: feedback.isWin ? '#00ff88' : '#ff0055' }}>
+                {feedback.isWin ? '+' : ''}{formatCurrency(feedback.pnl)}
+              </div>
+              {feedback.isWin && streak > 1 && (
+                <div className="feedback-streak">STREAK x{streak}</div>
+              )}
+            </div>
+          )}
+
+          <div className="tab-content">
+            {renderTabContent()}
+          </div>
+
+          <div className="bottom-nav">
+            <div
+              className={`nav-item ${activeTab === 'trade' ? 'active' : ''}`}
+              onClick={() => setActiveTab('trade')}
+            >
+              <div className="nav-icon">📈</div>
+              <div className="nav-label">Trade</div>
+            </div>
+            <div
+              className={`nav-item ${activeTab === 'portfolio' ? 'active' : ''}`}
+              onClick={() => setActiveTab('portfolio')}
+            >
+              <div className="nav-icon">💼</div>
+              <div className="nav-label">Portfolio</div>
+            </div>
+            <div
+              className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('leaderboard')}
+            >
+              <div className="nav-icon">🏆</div>
+              <div className="nav-label">Leaders</div>
+            </div>
+            <div
+              className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={() => setActiveTab('profile')}
+            >
+              <div className="nav-icon">👤</div>
+              <div className="nav-label">Profile</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Trade Tab Component
+    function TradeTab({ currentPrice, priceSeries, chartRef, canvasRef, handleChartTap, tradeSize, setTradeSize, expiry, setExpiry, openTrades, chartMarkers }) {
+      return (
+        <>
+          <div className="chart-container">
+            <div className="price-header">
+              <div className="price-display">
+                <div className="price-value">{formatCurrency(currentPrice)}</div>
+                <div className="live-indicator">LIVE</div>
+              </div>
+              <div style={{ fontSize: '14px', color: '#888' }}>ETH/USD</div>
+            </div>
+            <div className="chart-canvas-wrapper" ref={chartRef} onClick={handleChartTap}>
+              <canvas ref={canvasRef}></canvas>
+              {chartMarkers.map(marker => (
+                <div
+                  key={marker.id}
+                  className={`chart-marker ${marker.direction}`}
+                  style={{ top: `${marker.y}px`, left: '50%' }}
+                />
+              ))}
+            </div>
+            <div style={{ marginTop: '12px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
+              Tap above price for LONG • Tap below for SHORT
+            </div>
+          </div>
+
+          <div className="trade-controls">
+            <div className="control-section">
+              <div className="control-label">Trade Size</div>
+              <div className="button-group">
+                {[10, 50, 100, 500].map(size => (
+                  <button
+                    key={size}
+                    className={`option-button ${tradeSize === size ? 'active' : ''}`}
+                    onClick={() => setTradeSize(size)}
+                  >
+                    ${size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="control-section">
+              <div className="control-label">Expiry</div>
+              <div className="button-group">
+                {[
+                  { value: 30, label: '30s' },
+                  { value: 60, label: '1m' },
+                  { value: 120, label: '2m' },
+                  { value: 300, label: '5m' },
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    className={`option-button ${expiry === option.value ? 'active' : ''}`}
+                    onClick={() => setExpiry(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {openTrades.length > 0 && (
+            <div className="open-trades">
+              <div className="section-title">Open Positions ({openTrades.length})</div>
+              {openTrades.map(trade => (
+                <div key={trade.id} className={`trade-card ${trade.direction}`}>
+                  <div className="trade-header">
+                    <div className={`trade-direction ${trade.direction}`}>
+                      {trade.direction.toUpperCase()} {trade.leverage}x
+                    </div>
+                    <div className="countdown">{formatTime(trade.remainingTime)}</div>
+                  </div>
+                  <div className="trade-details">
+                    <div className="detail-item">
+                      <span className="detail-label">Size</span>
+                      <span className="detail-value">{formatCurrency(trade.size)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Entry</span>
+                      <span className="detail-value">{formatCurrency(trade.entry)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Target</span>
+                      <span className="detail-value">{formatCurrency(trade.target)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Current</span>
+                      <span className="detail-value">{formatCurrency(currentPrice)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Portfolio Tab Component
+    function PortfolioTab({ balance, stats, openTrades, closedTrades }) {
+      const [filter, setFilter] = useState('all');
+
+      const winRate = stats.wins + stats.losses > 0
+        ? ((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1)
+        : '0.0';
+
+      const filteredTrades = closedTrades.filter(trade => {
+        if (filter === 'wins') return trade.isWin;
+        if (filter === 'losses') return !trade.isWin;
+        return true;
+      });
+
+      return (
+        <>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-label">Balance</div>
+              <div className="stat-value neutral">{formatCurrency(balance)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">P&L Today</div>
+              <div className={`stat-value ${stats.plToday >= 0 ? 'positive' : 'negative'}`}>
+                {stats.plToday >= 0 ? '+' : ''}{formatCurrency(stats.plToday)}
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Win Rate</div>
+              <div className="stat-value neutral">{winRate}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Total Trades</div>
+              <div className="stat-value neutral">{stats.wins + stats.losses}</div>
+            </div>
+          </div>
+
+          {openTrades.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div className="section-title">Open Positions ({openTrades.length})</div>
+              {openTrades.map(trade => (
+                <div key={trade.id} className={`trade-card ${trade.direction}`}>
+                  <div className="trade-header">
+                    <div className={`trade-direction ${trade.direction}`}>
+                      {trade.direction.toUpperCase()} {trade.leverage}x
+                    </div>
+                    <div className="countdown">{formatTime(trade.remainingTime)}</div>
+                  </div>
+                  <div className="trade-details">
+                    <div className="detail-item">
+                      <span className="detail-label">Size</span>
+                      <span className="detail-value">{formatCurrency(trade.size)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Entry</span>
+                      <span className="detail-value">{formatCurrency(trade.entry)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <div className="section-title">Trade History</div>
+            <div className="history-filters">
+              {['all', 'wins', 'losses'].map(f => (
+                <button
+                  key={f}
+                  className={`filter-button ${filter === f ? 'active' : ''}`}
+                  onClick={() => setFilter(f)}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            {filteredTrades.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <div>No trades yet. Start trading!</div>
+              </div>
+            ) : (
+              <div className="history-list">
+                {filteredTrades.map((trade, i) => (
+                  <div key={i} className={`history-item ${trade.isWin ? 'win' : 'loss'}`}>
+                    <div>
+                      <div style={{ fontWeight: 700, marginBottom: '4px' }}>
+                        {trade.direction.toUpperCase()} {trade.leverage}x
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#888' }}>
+                        {new Date(trade.closeTime).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{
+                        fontWeight: 700,
+                        color: trade.isWin ? '#00ff88' : '#ff0055',
+                        marginBottom: '4px'
+                      }}>
+                        {trade.isWin ? '+' : ''}{formatCurrency(trade.pnl)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#888' }}>
+                        {formatCurrency(trade.entry)} → {formatCurrency(trade.exit)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    // Leaderboard Tab Component
+    function LeaderboardTab() {
+      const mockLeaderboard = [
+        { name: 'CryptoKing', profit: 15420, winRate: 78.5, streak: 12 },
+        { name: 'MoonLambo', profit: 12880, winRate: 72.3, streak: 8 },
+        { name: 'DiamondHands', profit: 10550, winRate: 69.1, streak: 15 },
+        { name: 'BullRunner', profit: 8920, winRate: 65.4, streak: 6 },
+        { name: 'TradeWizard', profit: 7340, winRate: 71.2, streak: 9 },
+        { name: 'PumpChaser', profit: 6780, winRate: 58.9, streak: 3 },
+        { name: 'HodlMaster', profit: 5650, winRate: 63.7, streak: 5 },
+        { name: 'DegenerateApe', profit: 4820, winRate: 55.2, streak: 2 },
+        { name: 'WhaleWatcher', profit: 3990, winRate: 60.8, streak: 4 },
+        { name: 'SatoshiSon', profit: 3210, winRate: 52.3, streak: 1 },
+      ];
+
+      return (
+        <>
+          <div className="section-title">🏆 Top Traders</div>
+          <div className="leaderboard-list">
+            {mockLeaderboard.map((player, i) => {
+              const rank = i + 1;
+              let rankClass = '';
+              let rankEmoji = rank;
+              if (rank === 1) { rankClass = 'gold'; rankEmoji = '🥇'; }
+              else if (rank === 2) { rankClass = 'silver'; rankEmoji = '🥈'; }
+              else if (rank === 3) { rankClass = 'bronze'; rankEmoji = '🥉'; }
+
+              return (
+                <div key={i} className={`leaderboard-item ${rank <= 3 ? 'top3' : ''}`}>
+                  <div className={`rank ${rankClass}`}>{rankEmoji}</div>
+                  <div className="player-info">
+                    <div className="player-name">{player.name}</div>
+                    <div className="player-stats">
+                      {formatCurrency(player.profit)} • {player.winRate}% WR • 🔥 {player.streak}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      );
+    }
+
+    // Profile Tab Component
+    function ProfileTab({ soundEnabled, setSoundEnabled, proMode, setProMode, walletConnected, setWalletConnected }) {
+      return (
+        <>
+          <div className="profile-header">
+            <div className="avatar">🚀</div>
+            <div className="username">TraderPro</div>
+            {walletConnected && (
+              <div className="wallet-address">Connected: 0xABCD...1234</div>
+            )}
+          </div>
+
+          <div className="settings-section">
+            <div className="section-title">Settings</div>
+            <div className="setting-item">
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: '4px' }}>Sound Effects</div>
+                <div style={{ fontSize: '12px', color: '#888' }}>
+                  Enable audio feedback
+                </div>
+              </div>
+              <div
+                className={`toggle ${soundEnabled ? 'active' : ''}`}
+                onClick={() => setSoundEnabled(!soundEnabled)}
+              >
+                <div className="toggle-knob"></div>
+              </div>
+            </div>
+            <div className="setting-item">
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: '4px' }}>Pro Mode</div>
+                <div style={{ fontSize: '12px', color: '#888' }}>
+                  Advanced trading features
+                </div>
+              </div>
+              <div
+                className={`toggle ${proMode ? 'active' : ''}`}
+                onClick={() => setProMode(!proMode)}
+              >
+                <div className="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            className="connect-button"
+            onClick={() => setWalletConnected(!walletConnected)}
+          >
+            {walletConnected ? 'Disconnect Wallet' : 'Connect Wallet'}
+          </button>
+        </>
+      );
+    }
+
+    // Render app
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
