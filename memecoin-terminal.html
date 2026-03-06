@@ -2886,7 +2886,7 @@ async function execute() {
     // Both steps use the same PK-mode fire-and-forget + nonce-bump pattern as sell approvals.
     if (S.side === 'buy' && swap._routeType === 'kyber') {
       const txSigner = S.wallet.signer || new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      const wethAbi  = ['function deposit() payable','function balanceOf(address) view returns (uint256)','function approve(address,uint256) returns (bool)'];
+      const wethAbi  = ['function deposit() payable','function balanceOf(address) view returns (uint256)','function approve(address,uint256) returns (bool)','function allowance(address,address) view returns (uint256)'];
       const weth     = new ethers.Contract(WETH_BASE, wethAbi, txSigner);
       const kyberInAmt = BigInt(S.routeCache?.inAmt || ethers.utils.parseUnits(amt.toFixed(8), 18).toString());
 
