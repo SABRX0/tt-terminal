@@ -2687,6 +2687,10 @@ async function execute() {
     }
   }
   if (S.side === 'sell') {
+    // Block sell if buy is still pending confirmation — no tokens on-chain yet
+    if (S.pendingBuy?.sym === sym) {
+      toast('Buy not confirmed yet — wait a moment', 'warn'); return;
+    }
     // Use cached balance (30s TTL) — avoids a blocking RPC call on every click
     const tokenBal = await fetchTokenBalance(tokenAddr, sym, 30_000);
     if (tokenBal > 0 && amt > tokenBal * 1.0001) {
@@ -2908,8 +2912,11 @@ async function execute() {
       }
 
       // b) Approve WETH for KyberSwap router
+      // Always check on-chain allowance — fire-and-forget APPROVE may have been dropped from mempool
       const wethApprovalKey = `weth-${swap.to}`;
-      if (!S.approvedFor[wethApprovalKey]) {
+      const wethAllowance = await weth.allowance(S.wallet.address, swap.to).catch(() => ethers.BigNumber.from(0));
+      if (wethAllowance.lt(ethers.BigNumber.from(kyberInAmt.toString()))) {
+        S.approvedFor[wethApprovalKey] = false; // on-chain allowance insufficient — reset cached state
         setLabel('⏳', 'Approving WETH…');
         if (S.wallet.pkMode) {
           const approveData = weth.interface.encodeFunctionData('approve', [swap.to, ethers.constants.MaxUint256]);
@@ -2927,23 +2934,24 @@ async function execute() {
         }
         S.approvedFor[wethApprovalKey] = true;
         try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
-        // Rebuild kyber calldata with fresh deadline/nonce
-        setLabel('⚡', 'Rebuilding…');
-        const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
-        if (routes.length) {
-          try {
-            const freshBuilt = await new Promise((res, rej) => {
-              let f = 0;
-              for (const r of routes) {
-                buildTxFromCache(r, S.wallet.address, slip)
-                  .then(s => res({ swap: s, via: r.via }))
-                  .catch(() => { if (++f === routes.length) rej(new Error('rebuild failed')); });
-              }
-            });
-            swap = freshBuilt.swap;
-            logEvent('APPROVE_REBUILD', `fresh tx via ${freshBuilt.via}`);
-          } catch(_) { /* keep existing swap */ }
-        }
+      }
+      // ALWAYS rebuild KyberSwap calldata after WRAP±APPROVE — ensures fresh minAmountOut
+      // (WRAP is fire-and-forget; SWAP executes ~2s later after WRAP confirms, price can move >slippage)
+      setLabel('⚡', 'Rebuilding…');
+      const _kyberRoutes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
+      if (_kyberRoutes.length) {
+        try {
+          const freshBuilt = await new Promise((res, rej) => {
+            let f = 0;
+            for (const r of _kyberRoutes) {
+              buildTxFromCache(r, S.wallet.address, slip)
+                .then(s => res({ swap: s, via: r.via }))
+                .catch(() => { if (++f === _kyberRoutes.length) rej(new Error('rebuild failed')); });
+            }
+          });
+          swap = freshBuilt.swap;
+          logEvent('KYBER_REBUILD', `fresh calldata via ${freshBuilt.via}`);
+        } catch(_) { /* keep existing swap */ }
       }
     }
 
