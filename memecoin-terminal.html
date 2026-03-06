@@ -835,7 +835,7 @@ const UNI_V3_ROUTER  = '0x2626664c2603336E57B271c5C0b26F421741e481'; // SwapRout
 const UNI_V4_QUOTER  = '0x0d5e0f971ed27fbff6c2837bf31316121532048d'; // V4Quoter on Base
 const UNI_V4_ROUTER  = '0x6fF5693b99212Da76ad316178A184AB56D299b43'; // Universal Router on Base
 const BASE_RPC       = 'https://mainnet.base.org';
-const EXTRA_RPCS     = ['https://base-mainnet.g.alchemy.com/v2/OHh8yI2xYyartHJnqmYS', 'https://base.llamarpc.com', 'https://rpc.ankr.com/base', 'https://base.publicnode.com', 'https://base-mainnet.public.blastapi.io', 'https://base.drpc.org', 'https://1rpc.io/base'];
+const EXTRA_RPCS     = ['https://base.llamarpc.com', 'https://rpc.ankr.com/base', 'https://base.publicnode.com', 'https://base-mainnet.public.blastapi.io', 'https://base.drpc.org', 'https://1rpc.io/base'];
 const ALL_BROADCAST_RPCS = [BASE_RPC, ...EXTRA_RPCS];
 // Raw fetch broadcast — much faster than ethers JsonRpcProvider (no polling/event setup overhead)
 function broadcastRaw(rawTx) {
@@ -1217,13 +1217,24 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-// ── Remote event logger (writes to /tmp/memecoin-events.log via log-server.py) ──
+// ── Event logger — in-memory buffer + optional localhost server (local dev only) ──
+const _eventLog = [];
 function logEvent(tag, msg) {
+  const entry = { ts: new Date().toISOString(), tag, msg };
+  _eventLog.push(entry);
+  if (_eventLog.length > 500) _eventLog.shift();
   fetch('http://localhost:9998/log', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag, msg }),
-  }).catch(() => {}); // silent if server not running
+  }).catch(() => {});
+}
+function _exportLog() {
+  const lines = _eventLog.map(e => `[${e.ts}] [${e.tag}] ${e.msg}`).join('\n');
+  const blob = new Blob([lines], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `terminal-log-${Date.now()}.txt`;
+  a.click();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3365,6 +3376,7 @@ function toast(msg, type = 'ok') {
     <div id="dbgHeader">
       <span id="dbgTitle">⬡ DEBUG LOG</span>
       <div id="dbgControls">
+        <button id="dbgExport" onclick="event.stopPropagation();_exportLog()">EXPORT</button>
         <button id="dbgClear" onclick="event.stopPropagation();_dbgClear()">CLEAR</button>
         <span id="dbgToggle">▲</span>
       </div>
