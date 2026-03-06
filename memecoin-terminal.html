@@ -888,6 +888,7 @@ const S = {
   txns:         [],
   positions:    {},
   walletBal:    0,
+  ethPrice:     2000, // live ETH/USD — updated by fetchEthPrice()
   holdings:     {},
   holdingsTs:   {},   // { sym: timestamp } — balance cache timestamps
   activeSellPct: null, // last clicked sell % preset (25/50/75/100) — re-applied on balance refresh
@@ -1099,6 +1100,15 @@ async function ensureBaseChain() {
       });
     } else throw e;
   }
+}
+
+async function fetchEthPrice() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const j = await r.json();
+    const p = j?.ethereum?.usd;
+    if (p && p > 100) { S.ethPrice = p; updateOrderInfo(); }
+  } catch(_) {}
 }
 
 async function refreshBalance() {
@@ -1489,6 +1499,7 @@ async function buildTxFromCache(route, user, slip) {
       const a = route.args;
       const ETH = '0x0000000000000000000000000000000000000000';
       const ZERO_HOOKS = '0x0000000000000000000000000000000000000000';
+      const poolHooks  = a.hooks || ZERO_HOOKS;
       const isBuy = a.inToken === ETH;
       const currency0 = ETH;
       const currency1 = isBuy ? a.outToken : a.inToken;
@@ -1506,7 +1517,7 @@ async function buildTxFromCache(route, user, slip) {
       const swapParams = ethers.utils.defaultAbiCoder.encode(
         ['tuple(tuple(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,bytes hookData)'],
         [[
-          [currency0, currency1, a.fee, a.tickSpacing, ZERO_HOOKS],
+          [currency0, currency1, a.fee, a.tickSpacing, poolHooks],
           zeroForOne, a.inAmt, minOut, '0x'
         ]]
       );
@@ -1646,7 +1657,53 @@ async function _uniswapV4Quote(inToken, outToken, inAmt, slip, user) {
     .filter(r => r.status === 'fulfilled' && r.value.amountOut > 0n)
     .map(r => r.value)
     .sort((a, b) => a.amountOut > b.amountOut ? -1 : 1);
-  if (!valid.length) throw new Error('univ4: no pool');
+  if (!valid.length) {
+    // Zero-hooks pools failed — look up actual pool key from PoolManager Initialize events
+    const V4_MANAGER = '0x498581fF718922c3f8e6A244956aF099B2652b2b';
+    const INIT_TOPIC = ethers.utils.id('Initialize(bytes32,address,address,uint24,int24,address,uint160,int24)');
+    const pad = a => '0x' + a.replace(/^0x/,'').toLowerCase().padStart(64,'0');
+    try {
+      const blkR = await fetch(BASE_RPC, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_blockNumber',params:[]}) });
+      const curBlock = parseInt((await blkR.json()).result, 16);
+      const fromBlock = '0x' + Math.max(0, curBlock - 4000000).toString(16);
+      const logsR = await fetch(BASE_RPC, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({jsonrpc:'2.0',id:2,method:'eth_getLogs',
+          params:[{address:V4_MANAGER,topics:[INIT_TOPIC,null,pad(ETH),pad(currency1)],fromBlock,toBlock:'latest'}]}) });
+      const discovered = (await logsR.json()).result || [];
+      if (!discovered.length) throw new Error('univ4: no pool');
+      const hookedPools = discovered.map(log => {
+        const d = log.data.slice(2);
+        return { fee: parseInt(d.slice(0,64),16), tickSpacing: parseInt(d.slice(64,128),16), hooks: '0x'+d.slice(152,192) };
+      });
+      dbg('UNIV4', `found ${hookedPools.length} hooked pool(s) via PoolManager events`);
+      const hookedSettled = await Promise.allSettled(hookedPools.map(async ({ fee, tickSpacing, hooks }) => {
+        const data = iface.encodeFunctionData('quoteExactInputSingle', [{
+          poolKey: { currency0, currency1, fee, tickSpacing, hooks },
+          zeroForOne, exactAmount: inAmt, hookData: '0x',
+        }]);
+        const r2 = await fetch(BASE_RPC, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:UNI_V4_QUOTER,data},'latest']}) });
+        const j2 = await r2.json();
+        if (j2.error || !j2.result || j2.result === '0x') throw new Error(`v4:hooked:noop`);
+        const [amountOut] = iface.decodeFunctionResult('quoteExactInputSingle', j2.result);
+        const out = BigInt(amountOut.toString());
+        if (out === 0n) throw new Error('v4:hooked:zero');
+        return { fee, tickSpacing, hooks, amountOut: out };
+      }));
+      const hookedValid = hookedSettled
+        .filter(r => r.status === 'fulfilled' && r.value.amountOut > 0n)
+        .map(r => r.value)
+        .sort((a,b) => a.amountOut > b.amountOut ? -1 : 1);
+      if (!hookedValid.length) throw new Error('univ4: no pool');
+      const best2 = hookedValid[0];
+      dbgOk('UNIV4', `hooked pool quote ok fee=${best2.fee} hooks=${best2.hooks.slice(0,10)}… out=${(Number(best2.amountOut)/1e18).toFixed(6)}`);
+      return { via:'UniV4', outAmount:best2.amountOut, type:'univ4',
+        args:{ inToken, outToken, inAmt, slip, fee:best2.fee, tickSpacing:best2.tickSpacing, hooks:best2.hooks } };
+    } catch(e2) {
+      throw new Error('univ4: no pool');
+    }
+  }
   const best = valid[0];
   dbgOk('UNIV4', `quote ok fee=${best.fee} out=${(Number(best.amountOut)/1e18).toFixed(6)}`);
   return {
@@ -1938,6 +1995,8 @@ async function boot() {
     // Cap auto-connect at 2s — never block token list from loading
     await Promise.race([tryAutoConnect(), new Promise(r => setTimeout(r, 2000))]);
   }
+  fetchEthPrice();
+  setInterval(fetchEthPrice, 5 * 60 * 1000);
   await loadTokenList();
 }
 
@@ -2548,7 +2607,7 @@ function updateOrderInfo() {
   const amt   = +document.getElementById('amtInp').value || 0;
   const sym   = S.token?.baseToken?.symbol || 'TKN';
   const slip  = +S.slip || 2;
-  const ETH   = 3200; // rough ETH/USD for estimates
+  const ETH   = S.ethPrice || 2000; // live ETH/USD from fetchEthPrice()
 
   if (price <= 0 || amt <= 0) {
     ['oiTokens','oiImpact','oiMin'].forEach(id =>
@@ -3008,7 +3067,11 @@ async function execute() {
         if (!_autoRetried) {
           logEvent('AUTO_RETRY', `${_side.toUpperCase()} ${_sym} — slippage revert, retrying fresh`);
           toast('Price moved — auto-retrying...', 'warn');
-          setTimeout(() => { S._autoRetry = true; execute().finally(() => { S._autoRetry = false; }); }, 300);
+          setTimeout(() => {
+            // Restore amount — input was cleared on submit, retry needs a value
+            if (!+document.getElementById('amtInp').value) document.getElementById('amtInp').value = amt;
+            S._autoRetry = true; execute().finally(() => { S._autoRetry = false; });
+          }, 300);
         } else {
           toast('Reverted twice — increase slippage or try later', 'err');
         }
@@ -3065,7 +3128,7 @@ function updatePosition(price) {
     return;
   }
 
-  const ethPrice = 3200; // rough ETH/USD for position display
+  const ethPrice = S.ethPrice || 2000;
   const value    = qty * price / ethPrice;
 
   document.getElementById('posHoldings').textContent  = `${fmtCompact(qty, false)} ${sym}`;
