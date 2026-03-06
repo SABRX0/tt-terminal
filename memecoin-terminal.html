@@ -2949,8 +2949,9 @@ async function execute() {
         S.approvedFor[wethApprovalKey] = true;
         try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
       }
-      // Rebuild with fresh quote. On auto-retry bump slippage to 5% min — price moved since first attempt.
-      const _kyberSlip = _autoRetried ? Math.max(slip, 5) : slip;
+      // Rebuild with fresh quote. On auto-retry bump slippage to 10% min — SCOUT/KyberSwap-only tokens
+      // can move >5% in the 2s WRAP confirmation window; 10% gives enough buffer without full honeypot risk.
+      const _kyberSlip = _autoRetried ? Math.max(slip, 10) : slip;
       setLabel('⚡', 'Refreshing quote…');
       await Promise.race([runQuoteCycle(), new Promise(r => setTimeout(r, 2000))]).catch(() => {});
       const _kyberRoutes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
@@ -3057,6 +3058,8 @@ async function execute() {
     // Capture token identity at tx time — user may navigate away before confirmation
     const _side = S.side, _sym = sym, _price = price;
     const _tokenAddr = S.token?.baseToken?.address;
+    // Capture swap params for revert-reason dry-run (swap object may be mutated by background pre-assembly)
+    const _swapTo = swap.to, _swapData = swap.data, _swapValue = swap.value || '0';
     waitForTx(txHash).then(async receipt => {
       if (receipt === null) {
         // Tx dropped from mempool (no receipt after timeout)
@@ -3111,6 +3114,12 @@ async function execute() {
       } else {
         dbgE('TX', `REVERTED: ${txHash}`);
         logEvent('REVERTED', `${_side.toUpperCase()} ${_sym} — ${txHash}`);
+        // Dry-run to get revert reason (best-effort — state may differ but slippage errors are consistent)
+        _alchemyProvider.call({ to: _swapTo, data: _swapData, value: _swapValue, from: S.wallet.address })
+          .catch(e => {
+            const reason = e.reason || (typeof e.data === 'string' && e.data !== '0x' ? e.data : null) || e.message;
+            if (reason) logEvent('REVERT_REASON', reason.toString().slice(0, 200));
+          });
         if (S.pendingBuy?.sym === _sym) { S.pendingBuy = null; delete S.holdings[_sym]; }
         updateTxn(txnId, 'fail');
         // Reset nonce + calldata — next attempt will fetch fresh nonce and rebuild tx
