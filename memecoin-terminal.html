@@ -2160,8 +2160,8 @@ function renderTokenList(pairs) {
   const maxVol = Math.max(...pairs.map(p => p.volume?.h24 || 0));
 
   el.innerHTML = pairs.map((p, i) => {
-    const sym    = p.baseToken?.symbol || '???';
-    const name   = p.baseToken?.name   || sym;
+    const sym    = esc(p.baseToken?.symbol || '???');
+    const name   = esc(p.baseToken?.name   || p.baseToken?.symbol || '???');
     const price  = p.priceUsd ? fmtPrice(+p.priceUsd) : '—';
     const ch24   = p.priceChange?.h24 ?? 0;
     const mcap   = fmtCompact(p.marketCap || p.fdv || 0);
@@ -2172,7 +2172,7 @@ function renderTokenList(pairs) {
     const fire   = ch24 > 50 ? '🔥' : ch24 > 20 ? '📈' : '';
     const active = S.token?.baseToken?.address === p.baseToken?.address;
 
-    return `<div class="tk-card ${active?'active':''}" onclick="selectToken(_listBuf[${i}])" id="tkcard-${p.baseToken?.address}">
+    return `<div class="tk-card ${active?'active':''}" onclick="selectToken(_listBuf[${i}])" id="tkcard-${esc(p.baseToken?.address)}">
       <div class="tk-row1">
         <span class="tk-sym">${sym} <span class="fire">${fire}</span></span>
         <span class="tk-price">${price}</span>
@@ -2233,8 +2233,8 @@ async function selectToken(pair) {
   // Links
   const dexUrl = pair.url || `https://dexscreener.com/${S.chain.id}/${pair.pairAddress}`;
   document.getElementById('tokLinks').innerHTML = `
-    <a class="tok-link" href="${dexUrl}" target="_blank">DexScreener ↗</a>
-    <a class="tok-link" href="https://x.com/search?q=%24${sym}" target="_blank">𝕏 ↗</a>`;
+    <a class="tok-link" href="${esc(dexUrl)}" target="_blank">DexScreener ↗</a>
+    <a class="tok-link" href="https://x.com/search?q=%24${esc(sym)}" target="_blank">𝕏 ↗</a>`;
 
   renderSafety(pair);
 
@@ -3288,6 +3288,11 @@ function initKeyboard() {
 // ═══════════════════════════════════════════════════════════════
 //  FORMAT HELPERS
 // ═══════════════════════════════════════════════════════════════
+// Escape HTML entities — prevents XSS when injecting external data (token names/symbols) into innerHTML
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function fmtPrice(p) {
   if (!p || isNaN(p)) return '—';
   if (p >= 1000)   return '$' + p.toLocaleString('en-US', {maximumFractionDigits:2});
@@ -3381,7 +3386,7 @@ function toast(msg, type = 'ok') {
     if (!body) return;
     const line = document.createElement('div');
     line.className = `dbg-line ${level}`;
-    line.innerHTML = `<span class="dbg-ts">${_ts()}</span><span class="dbg-tag">[${tag}]</span><span class="dbg-msg">${msg}</span>`;
+    line.innerHTML = `<span class="dbg-ts">${_ts()}</span><span class="dbg-tag">[${esc(tag)}]</span><span class="dbg-msg">${esc(msg)}</span>`;
     body.appendChild(line);
     _lines.push(line);
     if (_lines.length > MAX_LINES) { _lines.shift()?.remove(); }
