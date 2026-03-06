@@ -2890,11 +2890,12 @@ async function execute() {
       const weth     = new ethers.Contract(WETH_BASE, wethAbi, txSigner);
       const kyberInAmt = BigInt(S.routeCache?.inAmt || ethers.utils.parseUnits(amt.toFixed(8), 18).toString());
 
-      // a) Wrap ETH→WETH if needed — wait for confirmation so SWAP has no pending txs ahead of it
-      // AIDEV-NOTE: Previously fire-and-forget. Fire-and-forget means SWAP waits ~2s in mempool for
-      // WRAP to confirm, during which a fresh routeSummary becomes stale → slippage revert.
-      // Waiting for WRAP adds ~2s once (first buy only), but SWAP then executes immediately.
-      const wethBal = BigInt((await weth.balanceOf(S.wallet.address)).toString());
+      // a) Wrap ETH→WETH if needed — fire-and-forget (fast)
+      // On auto-retry: skip wethBal RPC call — previous WRAP confirmed but node may return stale 0
+      // within the 300ms retry window, causing a redundant re-wrap at a new nonce.
+      const wethBal = _autoRetried
+        ? BigInt(kyberInAmt.toString())  // assume WETH available from previous WRAP
+        : BigInt((await weth.balanceOf(S.wallet.address)).toString());
       if (wethBal < kyberInAmt) {
         setLabel('⏳', 'Wrapping ETH…');
         S.txCache = null; S.txCacheAlt = null;
@@ -2904,14 +2905,9 @@ async function execute() {
             to: WETH_BASE, data: depositData, value: ethers.BigNumber.from(kyberInAmt.toString()),
             gasLimit: ethers.BigNumber.from(30000), nonce, chainId: 8453, type: 2, ...gasFields,
           });
-          const wrapTx = await broadcastRaw(depositRaw).catch(e => ({ _err: e.message }));
-          if (wrapTx?._err) throw new Error('WRAP broadcast failed: ' + wrapTx._err);
-          logEvent('WRAP_ETH', `deposit ${Number(kyberInAmt)/1e18} ETH→WETH nonce=${nonce} hash=${wrapTx.hash}`);
+          broadcastRaw(depositRaw).catch(() => {});
+          logEvent('WRAP_ETH', `deposit ${Number(kyberInAmt)/1e18} ETH→WETH nonce=${nonce}`);
           nonce += 1; S._nonce = nonce + 1; S._nonceMin = nonce + 1;
-          setLabel('⏳', 'Confirming WRAP…');
-          const wrapReceipt = await waitForTx(wrapTx.hash);
-          if (!wrapReceipt || wrapReceipt.status !== '0x1') throw new Error('WRAP failed — try again');
-          logEvent('WRAP_CONFIRMED', `hash=${wrapTx.hash}`);
         } else {
           setLabel('⏳', 'Wrap ETH in wallet…');
           await (await txSigner.sendTransaction({ to: WETH_BASE, data: '0xd0e30db0', value: ethers.BigNumber.from(kyberInAmt.toString()) })).wait();
@@ -2919,7 +2915,7 @@ async function execute() {
         }
       }
 
-      // b) Approve WETH — check on-chain allowance, wait for confirm so SWAP has no pending txs
+      // b) Approve WETH — check on-chain allowance (catches dropped fire-and-forget APPROVE)
       const wethApprovalKey = `weth-${swap.to}`;
       const wethAllowance = await weth.allowance(S.wallet.address, swap.to).catch(() => ethers.BigNumber.from(0));
       if (wethAllowance.lt(ethers.BigNumber.from(kyberInAmt.toString()))) {
@@ -2931,14 +2927,9 @@ async function execute() {
             to: WETH_BASE, data: approveData, value: ethers.BigNumber.from(0),
             gasLimit: ethers.BigNumber.from(60000), nonce, chainId: 8453, type: 2, ...gasFields,
           });
-          const approveTx = await broadcastRaw(approveRaw).catch(e => ({ _err: e.message }));
-          if (approveTx?._err) throw new Error('APPROVE broadcast failed: ' + approveTx._err);
-          logEvent('APPROVE', `broadcast nonce=${nonce} hash=${approveTx.hash}`);
+          broadcastRaw(approveRaw).catch(() => {});
+          logEvent('APPROVE', `broadcast nonce=${nonce}, swap→${nonce+1}`);
           nonce += 1; S._nonce = nonce + 1; S._nonceMin = nonce + 1;
-          setLabel('⏳', 'Confirming APPROVE…');
-          const approveReceipt = await waitForTx(approveTx.hash);
-          if (!approveReceipt || approveReceipt.status !== '0x1') throw new Error('APPROVE failed — try again');
-          logEvent('APPROVE_CONFIRMED', `hash=${approveTx.hash}`);
         } else {
           setLabel('⏳', 'Approve WETH in wallet…');
           await (await weth.approve(swap.to, ethers.constants.MaxUint256)).wait();
@@ -2947,22 +2938,23 @@ async function execute() {
         S.approvedFor[wethApprovalKey] = true;
         try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
       }
-      // Build fresh calldata right now — SWAP will execute immediately (no pending txs in front)
+      // Rebuild with fresh quote. On auto-retry bump slippage to 5% min — price moved since first attempt.
+      const _kyberSlip = _autoRetried ? Math.max(slip, 5) : slip;
       setLabel('⚡', 'Refreshing quote…');
-      await Promise.race([runQuoteCycle(), new Promise(r => setTimeout(r, 3000))]).catch(() => {});
+      await Promise.race([runQuoteCycle(), new Promise(r => setTimeout(r, 2000))]).catch(() => {});
       const _kyberRoutes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
       if (_kyberRoutes.length) {
         try {
           const freshBuilt = await new Promise((res, rej) => {
             let f = 0;
             for (const r of _kyberRoutes) {
-              buildTxFromCache(r, S.wallet.address, slip)
+              buildTxFromCache(r, S.wallet.address, _kyberSlip)
                 .then(s => res({ swap: s, via: r.via }))
                 .catch(() => { if (++f === _kyberRoutes.length) rej(new Error('rebuild failed')); });
             }
           });
           swap = freshBuilt.swap;
-          logEvent('KYBER_REBUILD', `fresh calldata via ${freshBuilt.via}`);
+          logEvent('KYBER_REBUILD', `fresh calldata via ${freshBuilt.via} slip=${_kyberSlip}%`);
         } catch(_) { /* keep existing swap */ }
       }
     }
