@@ -971,6 +971,8 @@ async function connectWallet() {
     window.ethereum.on('accountsChanged', a => {
       if (!a.length) disconnectWallet();
       else {
+        // Ignore MetaMask account changes when PK mode is active — PK wallet is the signer
+        if (S.wallet.pkMode) return;
         if (S.wallet.address !== a[0]) { S.approvedFor = {}; try { localStorage.removeItem('_approvedFor'); localStorage.removeItem('_approvedForAddr'); } catch(_) {} }
         S.wallet.address = a[0]; refreshBalance(); updateWalletUI();
       }
@@ -2677,8 +2679,12 @@ async function execute() {
   if (!amt || amt <= 0) { toast('Enter an amount', 'err'); return; }
   if (!tokenAddr)       { toast('Token address unavailable', 'err'); return; }
 
-  if (S.side === 'buy' && amt > S.walletBal) {
-    toast(`Insufficient ETH. Balance: ${S.walletBal.toFixed(4)}`, 'err'); return;
+  if (S.side === 'buy') {
+    // Always fetch fresh balance before blocking — cached value can be stale
+    await refreshBalance().catch(() => {});
+    if (amt > S.walletBal) {
+      toast(`Insufficient ETH. Balance: ${S.walletBal.toFixed(4)}`, 'err'); return;
+    }
   }
   if (S.side === 'sell') {
     // Use cached balance (30s TTL) — avoids a blocking RPC call on every click
