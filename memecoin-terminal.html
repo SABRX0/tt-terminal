@@ -1,0 +1,3347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0xPPL — Memecoin Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"
+  integrity="sha384-JZigAjwiaZtkUbA44CWkPaT3iBb/mU5pO6QOANp+OqHd4q+1+7MG1kzp2OOP9ZfP"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"
+  integrity="sha384-Htz1SE4Sl5aitpvFgr2j0sfsGUIuSXI6t8hEyrlQ93zflEF3a29bH2AvkUROUw7J"
+  crossorigin="anonymous"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:        #060a10;
+  --panel:     rgba(10,16,26,0.85);
+  --panel2:    rgba(14,22,36,0.75);
+  --panel3:    rgba(20,30,48,0.70);
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+  --text:      #e8edf8;
+  --sub:       #8fa3c4;
+  --muted:     #4a607c;
+  --dim:       #2a3a50;
+  --green:     #00d488;
+  --green2:    #00a865;
+  --green-bg:  rgba(0,212,136,0.09);
+  --green-bdr: rgba(0,212,136,0.28);
+  --red:       #f04060;
+  --red2:      #b82040;
+  --red-bg:    rgba(240,64,96,0.09);
+  --red-bdr:   rgba(240,64,96,0.28);
+  --blue:      #3b82f6;
+  --blue2:     #1d4ed8;
+  --blue-bg:   rgba(59,130,246,0.12);
+  --blue-bdr:  rgba(59,130,246,0.35);
+  --yellow:    #f59e0b;
+  --cyan:      #22d3ee;
+  --orange:    #fb923c;
+  --grad-buy:  linear-gradient(135deg,#00d488 0%,#00a865 100%);
+  --grad-sell: linear-gradient(135deg,#f04060 0%,#b82040 100%);
+  --grad-blue: linear-gradient(135deg,#3b82f6 0%,#06b6d4 100%);
+  --glass-blur: blur(16px) saturate(180%);
+  --glass-bg:   rgba(8,14,24,0.80);
+  --r-panel: 14px;
+  --r-card:  10px;
+  --r-btn:    9px;
+  --r-input:  8px;
+  --r-badge:  5px;
+  --t: 0.2s ease;
+}
+
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% 0%,rgba(37,99,235,0.08) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%,rgba(0,212,136,0.05) 0%,transparent 50%);
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:13px;
+  height:100vh;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  user-select:none;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace!important;}
+
+/* ── HEADER ─────────────────────────── */
+.hdr{
+  height:48px;
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 1px 0 0 rgba(59,130,246,0.2),0 4px 24px rgba(0,0,0,0.4);
+  display:flex;align-items:center;
+  padding:0 14px;gap:10px;flex-shrink:0;z-index:200;
+}
+.logo{
+  display:flex;align-items:center;gap:7px;
+  font-size:13px;font-weight:700;color:var(--text);
+  letter-spacing:-.3px;white-space:nowrap;margin-right:4px;
+}
+.logo-orb{
+  width:26px;height:26px;border-radius:8px;
+  background:var(--grad-blue);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;color:#fff;letter-spacing:-.5px;
+  box-shadow:0 0 14px rgba(59,130,246,0.5),0 0 28px rgba(59,130,246,0.2);
+}
+.chain-sel{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:var(--r-btn);
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  cursor:pointer;color:var(--text);font:inherit;font-size:11px;font-weight:500;
+  transition:all var(--t);
+}
+.chain-sel:hover{border-color:var(--border2);background:rgba(255,255,255,0.07);}
+.chain-dot{width:7px;height:7px;border-radius:50%;background:#0052ff;box-shadow:0 0 6px #0052ff;}
+
+.hdr-search{
+  flex:1;max-width:300px;
+  display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:var(--r-input);padding:6px 12px;transition:all var(--t);
+}
+.hdr-search:focus-within{
+  border-color:var(--blue);
+  background:rgba(59,130,246,0.07);
+  box-shadow:0 0 0 3px rgba(59,130,246,0.12);
+}
+.hdr-search input{
+  flex:1;background:none;border:none;color:var(--text);
+  font:inherit;font-size:12px;outline:none;
+}
+.hdr-search input::placeholder{color:var(--muted);}
+.search-icon{color:var(--muted);font-size:13px;}
+
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:7px;}
+.wallet-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:var(--r-btn);
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  cursor:pointer;transition:all var(--t);
+}
+.wallet-pill:hover{border-color:var(--green-bdr);background:rgba(0,212,136,0.06);}
+.wallet-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);}
+.wallet-bal{color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px;}
+.wallet-addr{color:var(--sub);font-family:'JetBrains Mono',monospace;font-size:11px;}
+.gas-pill{
+  display:flex;align-items:center;gap:4px;
+  padding:5px 10px;border-radius:var(--r-btn);
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--muted);font-size:11px;cursor:pointer;transition:all var(--t);
+}
+.gas-pill:hover{color:var(--sub);border-color:var(--border2);}
+.kbd-hint{color:var(--muted);font-size:10px;padding:0 4px;}
+
+/* ── MAIN GRID ───────────────────────── */
+.main{display:grid;grid-template-columns:240px 1fr 262px;flex:1;overflow:hidden;}
+
+/* ── LEFT — TOKEN LIST ───────────────── */
+.tlist{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.tlist-tabs{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tl-tab{
+  padding:9px 4px;text-align:center;
+  cursor:pointer;font-size:11px;font-weight:500;color:var(--muted);
+  border:none;background:none;border-bottom:2px solid transparent;
+  transition:all var(--t);font-family:inherit;
+}
+.tl-tab:hover{color:var(--sub);background:rgba(255,255,255,0.02);}
+.tl-tab.active{color:var(--text);border-bottom-color:var(--blue);}
+
+.tlist-filter{
+  padding:6px 8px;border-bottom:1px solid var(--border);
+  display:flex;gap:4px;flex-shrink:0;
+}
+.filter-btn{
+  padding:3px 9px;border-radius:var(--r-badge);
+  border:1px solid transparent;background:none;
+  color:var(--muted);font:inherit;font-size:10px;font-weight:500;cursor:pointer;
+  transition:all var(--t);
+}
+.filter-btn:hover{color:var(--sub);}
+.filter-btn.active{color:var(--blue);border-color:var(--blue-bdr);background:var(--blue-bg);}
+
+.tlist-scroll{overflow-y:auto;flex:1;padding:4px 0;}
+
+.tk-card{
+  padding:9px 10px;
+  margin:2px 5px;
+  border-radius:var(--r-card);
+  border:1px solid transparent;
+  cursor:pointer;transition:all var(--t);position:relative;overflow:hidden;
+}
+.tk-card:hover{background:rgba(255,255,255,0.04);border-color:var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.3);}
+.tk-card.active{
+  background:rgba(59,130,246,0.08);
+  border-color:var(--blue-bdr);
+  box-shadow:0 0 0 1px rgba(59,130,246,0.1),0 4px 16px rgba(0,0,0,0.3);
+}
+
+.tk-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+.tk-sym{font-weight:700;font-size:12px;display:flex;align-items:center;gap:4px;letter-spacing:.1px;}
+.tk-sym .fire{font-size:9px;}
+.tk-price{font-weight:600;font-size:11px;font-family:'JetBrains Mono',monospace;}
+
+.tk-row2{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.tk-name{color:var(--muted);font-size:10px;}
+.tk-change{font-size:10px;font-weight:600;}
+.tk-change.up{color:var(--green);}
+.tk-change.down{color:var(--red);}
+
+.tk-row3{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.tk-stat{font-size:9px;color:var(--muted);}
+.tk-stat span{color:var(--sub);}
+.tk-badges{margin-left:auto;display:flex;gap:2px;}
+.badge{
+  padding:2px 5px;border-radius:var(--r-badge);
+  font-size:8px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;
+}
+.badge.lock{background:rgba(0,212,136,.1);color:var(--green);border:1px solid var(--green-bdr);}
+.badge.burn{background:rgba(34,211,238,.1);color:var(--cyan);border:1px solid rgba(34,211,238,.2);}
+.badge.warn{background:rgba(240,64,96,.1);color:var(--red);border:1px solid var(--red-bdr);}
+
+.tk-vol-bar{
+  position:absolute;bottom:0;left:0;
+  height:2px;
+  background:linear-gradient(90deg,rgba(59,130,246,0.6),rgba(34,211,238,0.4));
+  transition:width .5s ease;
+}
+
+.skel{
+  background:linear-gradient(90deg,var(--panel2) 25%,var(--panel3) 50%,var(--panel2) 75%);
+  background-size:200% 100%;animation:shimmer 1.8s infinite;border-radius:3px;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── CENTER ──────────────────────────── */
+.center{display:flex;flex-direction:column;overflow:hidden;}
+
+.tok-hdr{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;flex-shrink:0;
+}
+.tok-hdr-row1{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.tok-icon{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,#1d4ed8,#0891b2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-.5px;
+  box-shadow:0 2px 10px rgba(29,78,216,0.4);
+}
+.tok-main-name{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.tok-full-name{color:var(--muted);font-size:10px;margin-top:1px;}
+.tok-main-price{
+  font-size:22px;font-weight:700;margin-left:auto;
+  font-family:'JetBrains Mono',monospace;letter-spacing:-.5px;
+}
+.tok-main-change{font-size:11px;font-weight:600;padding:3px 8px;border-radius:var(--r-badge);}
+.tok-main-change.up  {color:var(--green);background:var(--green-bg);border:1px solid var(--green-bdr);}
+.tok-main-change.down{color:var(--red);  background:var(--red-bg); border:1px solid var(--red-bdr);}
+
+.tok-links{display:flex;gap:5px;margin-left:8px;}
+.tok-link{
+  padding:4px 8px;border-radius:var(--r-badge);
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--muted);font-size:10px;font-weight:500;
+  text-decoration:none;transition:all var(--t);
+}
+.tok-link:hover{color:var(--sub);border-color:var(--border2);background:rgba(255,255,255,0.07);}
+
+.tok-stats{display:flex;border-top:1px solid var(--border);padding-top:8px;gap:0;}
+.ts-item{flex:1;padding:0 10px;border-right:1px solid var(--border);}
+.ts-item:first-child{padding-left:0;}
+.ts-item:last-child{border-right:none;}
+.ts-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;font-weight:500;}
+.ts-val{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.ts-sub{font-size:9px;color:var(--muted);margin-top:1px;}
+
+.safety-row{
+  display:flex;gap:5px;padding:5px 14px;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,0.2);flex-shrink:0;align-items:center;
+}
+.safety-item{
+  font-size:9px;font-weight:600;padding:2px 7px;border-radius:var(--r-badge);border:1px solid;
+  letter-spacing:.2px;
+}
+.safety-item.ok  {color:var(--green);border-color:var(--green-bdr);background:var(--green-bg);}
+.safety-item.warn{color:var(--yellow);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.07);}
+.safety-item.bad {color:var(--red);  border-color:var(--red-bdr);  background:var(--red-bg);}
+
+.chart-ctrl{
+  background:rgba(0,0,0,0.2);display:flex;align-items:center;gap:3px;
+  padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tf-btn{
+  padding:4px 11px;border-radius:7px;cursor:pointer;color:var(--muted);
+  font-family:inherit;font-size:11px;font-weight:500;background:none;border:1px solid transparent;
+  transition:all var(--t);
+}
+.tf-btn:hover{color:var(--sub);background:rgba(255,255,255,0.04);}
+.tf-btn.active{
+  color:#fff;background:var(--blue-bg);border-color:var(--blue-bdr);
+  box-shadow:0 0 10px rgba(59,130,246,0.2);
+}
+
+.chart-wrap{flex:1;min-height:0;position:relative;}
+#chart{width:100%;height:100%;}
+
+/* live trades */
+.live-trades{
+  height:172px;border-top:1px solid var(--border);
+  background:var(--glass-bg);
+  backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+.lt-hdr{
+  display:grid;grid-template-columns:110px 52px 68px 70px 60px;
+  padding:4px 12px;border-bottom:1px solid var(--border);
+  color:var(--muted);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+}
+.lt-list{overflow-y:auto;flex:1;}
+.lt-row{
+  display:grid;grid-template-columns:110px 52px 68px 70px 60px;
+  padding:3px 12px;font-size:11px;cursor:pointer;transition:background .1s;
+  align-items:center;
+}
+.lt-row:hover{background:rgba(255,255,255,.02);}
+.lt-row.new{animation:tradeIn .2s ease;}
+@keyframes tradeIn{from{opacity:0;background:rgba(37,99,235,.08)}to{opacity:1;background:transparent}}
+.lt-wallet{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sub);}
+.lt-wallet a:hover{color:var(--cyan);}
+.lt-type{font-size:10px;font-weight:700;letter-spacing:.3px;}
+.lt-type.buy {color:var(--green);}
+.lt-type.sell{color:var(--red);}
+.lt-amt{font-family:'JetBrains Mono',monospace;text-align:right;font-weight:600;}
+.lt-price{text-align:right;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;}
+.lt-time{text-align:right;color:var(--muted);font-size:10px;}
+
+/* ── RIGHT — EXECUTION ───────────────── */
+.exec{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.exec-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);flex-shrink:0;}
+.exec-tab{
+  padding:12px;text-align:center;cursor:pointer;
+  border:none;border-bottom:2px solid transparent;background:none;
+  color:var(--muted);font:inherit;font-size:13px;font-weight:700;
+  transition:all var(--t);letter-spacing:.2px;
+}
+.exec-tab.buy.active {color:var(--green);border-bottom-color:var(--green);}
+.exec-tab.sell.active{color:var(--red);  border-bottom-color:var(--red);}
+.exec-tab:hover{background:rgba(255,255,255,.03);}
+
+.exec-body{padding:14px;display:flex;flex-direction:column;gap:12px;}
+
+.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.preset-btn{
+  padding:9px 4px;text-align:center;border-radius:var(--r-btn);cursor:pointer;
+  font:inherit;font-size:11px;font-weight:600;
+  border:1px solid var(--border);background:rgba(255,255,255,0.03);
+  color:var(--muted);transition:all var(--t);
+}
+.preset-btn:hover{border-color:var(--green-bdr);color:var(--green);background:var(--green-bg);box-shadow:0 0 10px rgba(0,212,136,0.1);}
+.preset-btn.sell-preset:hover{border-color:var(--red-bdr);color:var(--red);background:var(--red-bg);box-shadow:0 0 10px rgba(240,64,96,0.1);}
+.preset-btn.active-buy {border-color:var(--green-bdr);color:var(--green);background:var(--green-bg);}
+.preset-btn.active-sell{border-color:var(--red-bdr);  color:var(--red);  background:var(--red-bg);}
+
+.amt-wrap{
+  display:flex;align-items:center;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:var(--r-input);overflow:hidden;transition:all var(--t);
+}
+.amt-wrap:focus-within{
+  border-color:var(--blue);
+  background:rgba(59,130,246,0.06);
+  box-shadow:0 0 0 3px rgba(59,130,246,0.12);
+}
+.amt-inp{
+  flex:1;padding:10px 13px;background:none;border:none;
+  color:var(--text);font:inherit;font-size:15px;font-weight:600;outline:none;
+}
+.amt-unit{padding:0 13px;color:var(--muted);font-size:11px;font-weight:500;white-space:nowrap;}
+
+.priority-row{display:flex;flex-direction:column;gap:5px;}
+.priority-label{color:var(--muted);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+.priority-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+.pri-btn{
+  padding:7px 4px;text-align:center;border-radius:var(--r-btn);
+  border:1px solid var(--border);background:rgba(255,255,255,0.03);
+  color:var(--muted);font:inherit;font-size:11px;font-weight:500;cursor:pointer;
+  transition:all var(--t);
+}
+.pri-btn:hover{border-color:var(--border2);color:var(--sub);}
+.pri-btn.active{border-color:var(--blue-bdr);color:var(--blue);background:var(--blue-bg);box-shadow:0 0 8px rgba(59,130,246,0.15);}
+.pri-btn .pri-fee{display:block;font-size:9px;color:var(--muted);margin-top:1px;}
+.pri-btn.active .pri-fee{color:var(--sub);}
+
+.slip-row{
+  display:flex;justify-content:space-between;align-items:center;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:var(--r-card);padding:8px 12px;transition:border-color var(--t);
+}
+.slip-left{display:flex;flex-direction:column;gap:1px;}
+.slip-title{color:var(--muted);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.slip-val  {color:var(--text);font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.slip-opts{display:flex;gap:3px;}
+.sopt{
+  padding:3px 8px;border-radius:var(--r-badge);border:1px solid transparent;
+  background:none;color:var(--muted);font:inherit;font-size:10px;font-weight:500;cursor:pointer;
+  transition:all var(--t);
+}
+.sopt:hover{color:var(--sub);}
+.sopt.active{color:var(--blue);border-color:var(--blue-bdr);background:var(--blue-bg);}
+
+.order-info{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:var(--r-card);padding:10px 12px;display:flex;flex-direction:column;gap:5px;
+}
+.oi-row{display:flex;justify-content:space-between;font-size:11px;}
+.oi-key{color:var(--muted);font-weight:500;}
+.oi-val{color:var(--sub);font-family:'JetBrains Mono',monospace;}
+
+/* ── Debug log panel ── */
+#dbgPanel{
+  position:fixed;bottom:12px;right:12px;z-index:9999;
+  width:420px;max-width:calc(100vw - 24px);
+  background:#0d1117;border:1px solid #30363d;border-radius:8px;
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+#dbgHeader{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;border-bottom:1px solid #21262d;cursor:pointer;
+  user-select:none;
+}
+#dbgTitle{color:#8b949e;font-weight:700;font-size:10px;letter-spacing:.5px;}
+#dbgControls{display:flex;gap:6px;}
+#dbgClear{
+  background:none;border:1px solid #30363d;color:#8b949e;
+  border-radius:4px;padding:1px 6px;cursor:pointer;font-size:9px;
+}
+#dbgClear:hover{border-color:#58a6ff;color:#58a6ff;}
+#dbgToggle{color:#8b949e;font-size:10px;}
+#dbgBody{
+  max-height:220px;overflow-y:auto;padding:6px 0;
+  display:flex;flex-direction:column;
+}
+#dbgBody::-webkit-scrollbar{width:4px;}
+#dbgBody::-webkit-scrollbar-track{background:#0d1117;}
+#dbgBody::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px;}
+.dbg-line{
+  display:flex;gap:6px;padding:2px 10px;line-height:1.4;
+  border-bottom:1px solid transparent;
+}
+.dbg-line:hover{background:#161b22;}
+.dbg-ts{color:#484f58;white-space:nowrap;flex-shrink:0;}
+.dbg-tag{font-weight:700;white-space:nowrap;flex-shrink:0;}
+.dbg-msg{color:#c9d1d9;word-break:break-all;}
+.dbg-line.info .dbg-tag{color:#58a6ff;}
+.dbg-line.ok   .dbg-tag{color:#3fb950;}
+.dbg-line.warn .dbg-tag{color:#d29922;}
+.dbg-line.err  .dbg-tag{color:#f85149;}
+#dbgPanel.collapsed #dbgBody{display:none;}
+
+.exec-btn{
+  padding:15px;border-radius:var(--r-btn);border:none;
+  font:inherit;font-size:14px;font-weight:800;
+  cursor:pointer;transition:all var(--t);letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  position:relative;overflow:hidden;
+}
+.exec-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.1) 50%,transparent 60%);
+  transform:translateX(-100%);transition:transform 0.6s ease;
+}
+.exec-btn:hover::after{transform:translateX(100%);}
+.exec-btn.buy {
+  background:var(--grad-buy);color:#fff;
+  box-shadow:0 4px 20px rgba(0,212,136,0.35),0 0 40px rgba(0,212,136,0.1);
+}
+.exec-btn.sell{
+  background:var(--grad-sell);color:#fff;
+  box-shadow:0 4px 20px rgba(240,64,96,0.35),0 0 40px rgba(240,64,96,0.1);
+}
+.exec-btn:hover{filter:brightness(1.1);transform:translateY(-2px);}
+.exec-btn.buy:hover  {box-shadow:0 8px 28px rgba(0,212,136,0.45),0 0 50px rgba(0,212,136,0.15);}
+.exec-btn.sell:hover {box-shadow:0 8px 28px rgba(240,64,96,0.45),0 0 50px rgba(240,64,96,0.15);}
+.exec-btn:active{transform:translateY(1px);filter:brightness(0.95);}
+.exec-btn.loading{opacity:.5;cursor:not-allowed;transform:none!important;filter:none!important;box-shadow:none!important;}
+
+.position-box{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:var(--r-card);padding:10px 12px;
+}
+.pos-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.pos-title{color:var(--muted);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+.pos-pnl{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.pos-pnl.up  {color:var(--green);}
+.pos-pnl.down{color:var(--red);}
+.pos-rows{display:flex;flex-direction:column;gap:3px;}
+.pos-row{display:flex;justify-content:space-between;font-size:10px;}
+.pos-key{color:var(--muted);}
+.pos-val{color:var(--sub);font-family:'JetBrains Mono',monospace;}
+
+.divider{border:none;border-top:1px solid var(--border);margin:0 -14px;}
+
+.txn-list{display:flex;flex-direction:column;gap:4px;}
+.txn-item{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 10px;border-radius:var(--r-card);
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  font-size:10px;animation:txnIn .2s ease;transition:all var(--t);
+}
+.txn-item:hover{border-color:var(--border2);background:rgba(255,255,255,0.05);}
+@keyframes txnIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.txn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.txn-dot.buy    {background:var(--green);box-shadow:0 0 4px var(--green);}
+.txn-dot.sell   {background:var(--red);box-shadow:0 0 4px var(--red);}
+.txn-dot.pending{background:var(--yellow);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.txn-text{flex:1;color:var(--sub);}
+.txn-status{font-size:10px;font-weight:600;}
+.txn-status.ok     {color:var(--green);}
+.txn-status.pending{color:var(--yellow);}
+.txn-status.fail   {color:var(--red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,rgba(59,130,246,0.4),rgba(0,212,136,0.3));
+  border-radius:4px;
+}
+::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,rgba(59,130,246,0.7),rgba(0,212,136,0.5));
+}
+
+.toast{
+  position:fixed;bottom:18px;right:18px;
+  padding:10px 16px;border-radius:var(--r-card);border:1px solid;
+  font-size:12px;font-weight:500;z-index:9999;
+  animation:toastIn .2s ease;max-width:320px;
+  display:flex;align-items:center;gap:8px;
+  backdrop-filter:blur(16px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.ok  {background:rgba(0,212,136,0.12); border-color:var(--green-bdr);color:var(--green);}
+.toast.err {background:rgba(240,64,96,0.12);  border-color:var(--red-bdr);  color:var(--red);}
+.toast.info{background:rgba(59,130,246,0.12); border-color:var(--blue-bdr); color:#93c5fd;}
+@keyframes toastIn{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+
+.flash-g{animation:fg .35s ease;}
+.flash-r{animation:fr .35s ease;}
+@keyframes fg{0%{color:var(--green)}100%{}}
+@keyframes fr{0%{color:var(--red)}100%{}}
+
+kbd{
+  display:inline-block;padding:1px 5px;border-radius:3px;
+  background:var(--panel2);border:1px solid var(--border);
+  color:var(--muted);font-size:9px;font-weight:500;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────── -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-orb">0x</div>
+    PPL Terminal
+  </div>
+
+  <div class="chain-sel" id="chainSel" onclick="cycleChain()">
+    <div class="chain-dot" id="chainDot" style="background:#0052ff"></div>
+    <span id="chainLabel">Base</span>
+    <span style="color:var(--muted);margin-left:2px">▾</span>
+  </div>
+
+  <div class="hdr-search">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInp" placeholder="Search token or paste address…" oninput="onSearch(this.value)">
+    <kbd>/</kbd>
+  </div>
+
+  <div class="hdr-right">
+    <div class="gas-pill" title="Priority fee">
+      ⛽ <span id="gasLabel">0.0001 ETH</span>
+    </div>
+    <div class="wallet-pill" id="walletPill" onclick="connectWallet()" style="cursor:pointer">
+      <div class="wallet-dot" id="walletDot" style="background:var(--muted)"></div>
+      <span class="wallet-bal" id="walletBal"></span>
+      <span class="wallet-addr" id="walletAddr" style="color:var(--sub);font-weight:600">Connect Wallet</span>
+    </div>
+    <div onclick="openPKModal()" title="Import private key — instant execution, no popups" style="cursor:pointer;background:#1a1a2e;border:1px solid #f0b90b44;border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;color:#f0b90b;letter-spacing:.3px;white-space:nowrap;">⚡ PK</div>
+    <div class="kbd-hint">B buy · S sell · / search</div>
+  </div>
+</header>
+
+<!-- ── PK Import Modal ──────────────────────────────────── -->
+<div id="pkModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:28px;width:380px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.6);">
+    <div style="font-size:15px;font-weight:800;color:#f0b90b;margin-bottom:6px;">⚡ Private Key Mode</div>
+    <div style="font-size:11px;color:#8b949e;margin-bottom:18px;line-height:1.6;">
+      Key lives in RAM only — never written to disk or sent anywhere.<br>
+      <span style="color:#f85149;font-weight:600;">⚠ Use a dedicated hot wallet with only trading funds.<br>
+      Auto-locks after 30 min idle or 5 min tab hidden.<br>
+      Never use your main wallet here.</span>
+    </div>
+    <input id="pkInput" type="password" placeholder="0x private key…" onkeydown="if(event.key==='Enter')importPK()" style="width:100%;box-sizing:border-box;background:#161b22;border:1px solid #30363d;border-radius:7px;padding:11px 12px;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;margin-bottom:14px;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="importPK()" style="flex:1;background:#f0b90b;border:none;border-radius:7px;padding:10px;color:#000;font-weight:800;cursor:pointer;font-size:13px;">⚡ Import &amp; Connect</button>
+      <button onclick="closePKModal()" style="background:#21262d;border:1px solid #30363d;border-radius:7px;padding:10px 14px;color:#8b949e;font-weight:600;cursor:pointer;font-size:13px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────── -->
+<div class="main">
+
+<!-- LEFT ── TOKEN LIST -->
+<div class="tlist">
+  <div class="tlist-tabs">
+    <button class="tl-tab active" onclick="setListTab(this,'trending')">🔥 Trending</button>
+    <button class="tl-tab"        onclick="setListTab(this,'new')">🆕 New</button>
+    <button class="tl-tab"        onclick="setListTab(this,'watchlist')">⭐ Watchlist</button>
+  </div>
+  <div class="tlist-filter">
+    <button class="filter-btn active" onclick="setFilter(this,'all')">All</button>
+    <button class="filter-btn" onclick="setFilter(this,'1h')">1h</button>
+    <button class="filter-btn" onclick="setFilter(this,'6h')">6h</button>
+    <button class="filter-btn" onclick="setFilter(this,'24h')">24h</button>
+  </div>
+  <div class="tlist-scroll" id="tokenList">
+    <!-- skeleton -->
+    <div style="padding:10px;display:flex;flex-direction:column;gap:8px;">
+      <div class="skel" style="height:14px;width:60%"></div>
+      <div class="skel" style="height:11px;width:80%"></div>
+      <div class="skel" style="height:11px;width:45%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CENTER ── CHART + TRADES -->
+<div class="center">
+
+  <div class="tok-hdr" id="tokHdr">
+    <div class="tok-hdr-row1">
+      <div class="tok-icon" id="tokIcon">?</div>
+      <div>
+        <div class="tok-main-name" id="tokName">Select a token</div>
+        <div class="tok-full-name" id="tokFullName">— / ETH</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="tok-main-price" id="tokPrice">—</div>
+        <span class="tok-main-change" id="tokChange">—</span>
+      </div>
+      <div class="tok-links" id="tokLinks"></div>
+    </div>
+    <div class="tok-stats" id="tokStats">
+      <div class="ts-item"><div class="ts-label">Market Cap</div><div class="ts-val" id="sMcap">—</div></div>
+      <div class="ts-item"><div class="ts-label">Liquidity</div><div class="ts-val" id="sLiq">—</div></div>
+      <div class="ts-item"><div class="ts-label">Vol 24h</div><div class="ts-val" id="sVol">—</div></div>
+      <div class="ts-item"><div class="ts-label">Buys / Sells</div><div class="ts-val" id="sBuySell">—</div></div>
+      <div class="ts-item"><div class="ts-label">Holders</div><div class="ts-val" id="sHolders">—</div></div>
+      <div class="ts-item"><div class="ts-label">Age</div><div class="ts-val" id="sAge">—</div></div>
+    </div>
+  </div>
+
+  <div class="safety-row" id="safetyRow">
+    <span style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">Safety</span>
+    <div id="safetyItems" style="display:flex;gap:5px;align-items:center">
+      <span style="color:var(--muted);font-size:10px">Select a token to load safety data</span>
+    </div>
+  </div>
+
+  <div class="chart-ctrl">
+    <button class="tf-btn" data-tf="1m">1m</button>
+    <button class="tf-btn" data-tf="5m">5m</button>
+    <button class="tf-btn active" data-tf="15m">15m</button>
+    <button class="tf-btn" data-tf="1h">1h</button>
+    <button class="tf-btn" data-tf="4h">4h</button>
+    <button class="tf-btn" data-tf="1d">1D</button>
+    <span style="margin-left:auto;color:var(--dim);font-size:10px" id="chartAge"></span>
+  </div>
+
+  <div class="chart-wrap">
+    <div id="chart"></div>
+  </div>
+
+  <div class="live-trades">
+    <div class="lt-hdr">
+      <span>Wallet</span>
+      <span>Type</span>
+      <span style="text-align:right">Amount</span>
+      <span style="text-align:right">Price</span>
+      <span style="text-align:right">Time</span>
+    </div>
+    <div class="lt-list" id="liveTradeList"></div>
+  </div>
+
+</div>
+
+<!-- RIGHT ── EXECUTION PANEL -->
+<div class="exec">
+  <div class="exec-tabs">
+    <button class="exec-tab buy active" id="buyTabBtn"  onclick="setSide('buy')">▲ BUY</button>
+    <button class="exec-tab sell"       id="sellTabBtn" onclick="setSide('sell')">▼ SELL</button>
+  </div>
+  <div class="exec-body">
+
+    <div>
+      <div style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+        Quick <span id="sideLabel">Buy</span> <span style="color:var(--muted)" id="quickUnit">(ETH)</span>
+      </div>
+      <div class="preset-grid" id="presetGrid">
+        <button class="preset-btn" onclick="setPreset(0.1,this)">0.1</button>
+        <button class="preset-btn" onclick="setPreset(0.5,this)">0.5</button>
+        <button class="preset-btn" onclick="setPreset(1,this)">1</button>
+        <button class="preset-btn" onclick="setPreset(5,this)">5</button>
+      </div>
+    </div>
+
+    <div class="amt-wrap">
+      <input class="amt-inp" type="number" id="amtInp" placeholder="0.00" oninput="onAmtChange()">
+      <span class="amt-unit" id="amtUnit">ETH</span>
+    </div>
+
+    <div class="priority-row">
+      <div class="priority-label">Priority Fee</div>
+      <div class="priority-btns">
+        <button class="pri-btn" id="pri0" onclick="setPri(this,0)">Normal<span class="pri-fee">0.1 gwei</span></button>
+        <button class="pri-btn active" id="pri1" onclick="setPri(this,1)">Fast ⚡<span class="pri-fee">0.5 gwei</span></button>
+        <button class="pri-btn" id="pri2" onclick="setPri(this,2)">Turbo 🚀<span class="pri-fee">5 gwei</span></button>
+      </div>
+    </div>
+
+    <div class="slip-row">
+      <div class="slip-left">
+        <div class="slip-title">Slippage</div>
+        <div class="slip-val" id="slipVal">2%</div>
+      </div>
+      <div class="slip-opts">
+        <button class="sopt active" onclick="setSlip(this,'2')">2%</button>
+        <button class="sopt" onclick="setSlip(this,'5')">5%</button>
+        <button class="sopt" onclick="setSlip(this,'10')">10%</button>
+        <button class="sopt" onclick="setSlip(this,'25')">25%</button>
+      </div>
+    </div>
+
+    <div class="order-info" id="orderInfo">
+      <div class="oi-row"><span class="oi-key">Est. receive</span><span class="oi-val" id="oiTokens">—</span></div>
+      <div class="oi-row"><span class="oi-key">Min received</span><span class="oi-val" id="oiMin">—</span></div>
+      <div class="oi-row"><span class="oi-key">Route</span><span class="oi-val" id="oiImpact" style="color:var(--cyan)">—</span></div>
+      <div class="oi-row"><span class="oi-key">Aggregators</span><span class="oi-val" id="oiFee" style="color:var(--muted);font-size:9px">—</span></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px;height:12px">
+      <span id="txReadyDot" style="font-size:10px;color:var(--muted);display:none">⚡ ready</span>
+    </div>
+    <button class="exec-btn buy" id="execBtn" onclick="execute()">
+      <span id="execIcon">⚡</span>
+      <span id="execLabel">BUY</span>
+    </button>
+
+    <hr class="divider">
+
+    <div class="position-box" id="posBox">
+      <div class="pos-hdr">
+        <span class="pos-title">My Position</span>
+        <span class="pos-pnl" id="posPnl">—</span>
+      </div>
+      <div class="pos-rows">
+        <div class="pos-row"><span class="pos-key">Holdings</span><span class="pos-val" id="posHoldings">—</span></div>
+        <div class="pos-row"><span class="pos-key">Entry price</span><span class="pos-val" id="posEntry">—</span></div>
+        <div class="pos-row"><span class="pos-key">Current</span><span class="pos-val" id="posCurrent">—</span></div>
+        <div class="pos-row"><span class="pos-key">Value</span><span class="pos-val" id="posValue">—</span></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div>
+      <div style="color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">
+        Recent Transactions
+      </div>
+      <div class="txn-list" id="txnList">
+        <div style="color:var(--dim);font-size:11px;text-align:center;padding:8px">No transactions yet</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+
+const CHAINS = [
+  { id:'base',    label:'Base',    color:'#0052ff', ticker:'ETH', scan:'https://basescan.org/tx/' },
+  { id:'ethereum',label:'Ethereum',color:'#627eea', ticker:'ETH', scan:'https://etherscan.io/tx/' },
+  { id:'solana',  label:'Solana',  color:'#9945ff', ticker:'SOL', scan:'https://solscan.io/tx/' },
+  { id:'bsc',     label:'BSC',     color:'#f0b90b', ticker:'BNB', scan:'https://bscscan.com/tx/' },
+];
+
+// Seed tokens — Base chain memecoins
+const SEED_TOKENS = [
+  { address:'0x532f27101965dd16442E59d40670FaF5eBB142E4', sym:'BRETT', name:'Brett' },
+  { address:'0xAC1Bd2486aAf3B5C0fc3Fd868558b082a531B2B4', sym:'TOSHI', name:'Toshi' },
+  { address:'0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', sym:'DEGEN', name:'Degen' },
+  { address:'0x7F12d13B34F5F4f0a9449c16Bcd42f0da47AF200', sym:'NORMIE',name:'Normie' },
+  { address:'0x27D2DECb4bFC9C76F0309b8E88dec3a601Fe25a8', sym:'BALD',  name:'Bald' },
+  { address:'0xCfa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF',  sym:'MOG',   name:'Mog Coin' },
+];
+
+const WALLETS = ['8xKz','3mPq','7rNt','2wBv','9jLs','4hDf','6cXp','1nGk','5yWm','0aTb'];
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+const BASE_CHAIN_ID  = 8453;
+const BASE_CHAIN_HEX = '0x2105';
+const WETH_BASE      = '0x4200000000000000000000000000000000000006';
+const ODOS_ROUTER    = '0x19cEeAd7105607Cd444F5ad10dd51356436095a1';
+const KYBER_ROUTER   = '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5';
+const UNI_V3_QUOTER  = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a'; // QuoterV2 on Base
+const UNI_V3_ROUTER  = '0x2626664c2603336E57B271c5C0b26F421741e481'; // SwapRouter02 on Base
+const UNI_V4_QUOTER  = '0x0d5e0f971ed27fbff6c2837bf31316121532048d'; // V4Quoter on Base
+const UNI_V4_ROUTER  = '0x6fF5693b99212Da76ad316178A184AB56D299b43'; // Universal Router on Base
+const BASE_RPC       = 'https://mainnet.base.org';
+const EXTRA_RPCS     = ['https://base-mainnet.g.alchemy.com/v2/OHh8yI2xYyartHJnqmYS', 'https://base.llamarpc.com', 'https://rpc.ankr.com/base', 'https://base.publicnode.com', 'https://base-mainnet.public.blastapi.io', 'https://base.drpc.org', 'https://1rpc.io/base'];
+const ALL_BROADCAST_RPCS = [BASE_RPC, ...EXTRA_RPCS];
+// Raw fetch broadcast — much faster than ethers JsonRpcProvider (no polling/event setup overhead)
+function broadcastRaw(rawTx) {
+  const payload = JSON.stringify({jsonrpc:'2.0',method:'eth_sendRawTransaction',params:[rawTx],id:1});
+  return new Promise((resolve, reject) => {
+    let failed = 0;
+    function onErr() { if (++failed === ALL_BROADCAST_RPCS.length) reject(new Error('All broadcast RPCs failed')); }
+    for (const url of ALL_BROADCAST_RPCS) {
+      fetch(url, {method:'POST', headers:{'content-type':'application/json'}, body:payload})
+        .then(r => r.json())
+        .then(j => {
+            const h = typeof j.result === 'string' ? j.result
+                    : j.result?.hash || j.result?.transactionHash;
+            if (h) resolve({hash: h}); else onErr();
+          })
+        .catch(onErr);
+    }
+  });
+}
+const ETH_SENTINEL   = '0xEeeeeEeeeEeEeeEeEeEeeEEEEeeEEEEeeEEEEEe'; // native ETH in KyberSwap
+// Route cache TTL is 25s (defined in execute). pathId valid ~60s, routeSummary ~10min.
+const OKX_API_KEY     = '599eb054-b97c-4dc2-9fcf-1b43d4f59d1f';
+const OKX_SECRET      = '092792C10FE6AAC9B439A53DF6658EE4';
+const OKX_PASSPHRASE  = 'Super@2409';
+const ERC20_ABI      = [
+  'function allowance(address,address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
+  'function decimals() view returns (uint8)',
+  'function balanceOf(address) view returns (uint256)',
+];
+
+const S = {
+  chain:      CHAINS[0],   // Base by default
+  chainIdx:   0,
+  tab:        'trending',
+  filter:     'all',
+  tokens:     [],
+  token:      null,
+  side:       'buy',
+  slip:       2,
+  priority:   1,
+  preset:     null,
+  customAmt:  '',
+  tf:         '15m',
+  chart:      null,
+  candles:    null,
+  volumes:    null,
+  liveTs:       [],
+  seenTxHashes: new Set(),
+  txns:         [],
+  positions:    {},
+  walletBal:    0,
+  holdings:     {},
+  holdingsTs:   {},   // { sym: timestamp } — balance cache timestamps
+  activeSellPct: null, // last clicked sell % preset (25/50/75/100) — re-applied on balance refresh
+  activeSellAmt: null, // the amount setSellPct calculated with stale balance — used to detect re-apply
+  pendingBuy:   null, // { sym, addr, approxAmt } — set after buy broadcast, cleared on confirm/fail
+  tokenDec:     18,   // actual decimals of current token — fetched in fetchTokenBalance, used for sell inAmt
+  pollTimer:    null,
+  tradeFeedTimer: null,
+  // wallet
+  wallet: { connected: false, address: null, signer: null, pkMode: false },
+  routeCache:   null,   // best route (for UI display)
+  allRoutes:    [],     // all valid routes from last cycle, sorted best→worst
+  txCache:      null,   // { swap, via, inAmt, ts } — pre-assembled tx (current side)
+  txCacheAlt:   null,   // { swap, via, inAmt, side, ts } — pre-assembled tx (opposite side)
+  approvedFor:  JSON.parse(localStorage.getItem('_approvedFor')||'{}'), // persisted across sessions
+  refreshTimer: null,   // background quote loop
+  quoteTimer:   null,   // debounce for updateOrderInfo
+  _amtDebounce: null,   // debounce for amount-change re-quote
+  // Pre-fetched tx params — eliminates 2 RPC round-trips from send path
+  _nonce:       null,   // cached pending nonce
+  _nonceTs:     0,
+  _nonceMin:    0,      // floor — never use a nonce below this (prevents prefetch from going backwards)
+  _gasData:     null,   // { maxFeePerGas, maxPriorityFeePerGas }
+  _gasDataTs:   0,
+};
+
+// Pre-fetch nonce + gas price in background so sendTransaction only needs 1 RPC call
+// AIDEV-NOTE: Pass network explicitly to suppress ethers.js auto-detect (noNetwork errors in v5)
+const _alchemyProvider = new ethers.providers.StaticJsonRpcProvider('https://base-rpc.publicnode.com', { chainId: 8453, name: 'base' });
+_alchemyProvider.pollingInterval = 1000; // Base produces blocks every 2s — poll at 1s for fast confirmations
+async function prefetchTxParams() {
+  if (!S.wallet.signer) return;
+  try {
+    const addr = S.wallet.address;
+    // Race wallet provider vs Alchemy — whichever answers first
+    const never = () => new Promise(() => {}); // never rejects — lets the other race winner through
+    const [nonce, block] = await Promise.all([
+      Promise.race([
+        S.wallet.signer.getTransactionCount('pending'),
+        _alchemyProvider.getTransactionCount(addr, 'pending').catch(never),
+      ]),
+      Promise.race([
+        S.wallet.signer.provider.getBlock('latest'),
+        _alchemyProvider.getBlock('latest').catch(never),
+      ]),
+    ]);
+    S._nonce   = Math.max(nonce, S._nonceMin); // never go below the floor we set after broadcast
+    S._nonceTs = Date.now();
+    if (block?.baseFeePerGas) {
+      const priorityGwei = [0.001, 0.5, 5][S.priority] ?? 0.001;
+      const tip = ethers.utils.parseUnits(String(priorityGwei), 'gwei');
+      S._gasData   = { maxFeePerGas: block.baseFeePerGas.mul(2).add(tip), maxPriorityFeePerGas: tip };
+      S._gasDataTs = Date.now();
+    }
+    dbg('PRE', `nonce=${nonce} baseFee=${block?.baseFeePerGas?.toString()||'?'}`);
+  } catch(e) {
+    dbgW('PRE', 'gas prefetch failed: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WALLET
+// ═══════════════════════════════════════════════════════════════
+async function connectWallet() {
+  if (!window.ethereum) {
+    dbgE('WALLET','window.ethereum not found — is Rabby/MetaMask installed?');
+    toast('No wallet detected — install MetaMask or Rabby', 'err');
+    return;
+  }
+  dbg('WALLET','requesting accounts…');
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    dbg('WALLET',`got account: ${accounts[0]?.slice(0,10)}…`);
+    await ensureBaseChain();
+    dbgOk('WALLET','on Base chain');
+    S.wallet.address   = accounts[0];
+    S.wallet.connected = true;
+    await refreshBalance();
+    updateWalletUI();
+    window.ethereum.on('accountsChanged', a => {
+      if (!a.length) disconnectWallet();
+      else { S.wallet.address = a[0]; refreshBalance(); updateWalletUI(); }
+    });
+    window.ethereum.on('chainChanged', () => location.reload());
+    dbgOk('WALLET','connected ✓');
+    toast('Wallet connected', 'ok');
+    refreshCurrentTokenBalance();
+    if (S.token && S.chain.id === 'base') startRouteRefresh();
+  } catch(e) {
+    dbgE('WALLET',`error code=${e.code} msg=${e.message}`);
+    if (e.code !== 4001) toast('Connection failed: ' + (e.message||''), 'err');
+  }
+}
+
+function disconnectWallet() {
+  S.wallet = { connected:false, address:null, signer:null, pkMode:false };
+  S.walletBal = 0;
+  stopRouteRefresh();
+  updateWalletUI();
+}
+
+// ── Private Key (custodial) mode ─────────────────────────────────
+const PK_AUTO_LOCK_MS  = 30 * 60 * 1000; // 30 min inactivity → auto-lock
+const PK_HIDDEN_LOCK_MS = 5 * 60 * 1000;  // 5 min tab hidden → auto-lock
+let _pkLockTimer   = null;
+let _pkHiddenAt    = null;
+let _pkVisHandler  = null;
+
+function _resetPKTimer() {
+  clearTimeout(_pkLockTimer);
+  _pkLockTimer = setTimeout(() => {
+    if (S.wallet.pkMode) {
+      lockPK();
+      toast('⚡ PK auto-locked after 30 min inactivity', 'warn');
+    }
+  }, PK_AUTO_LOCK_MS);
+}
+
+function lockPK() {
+  clearTimeout(_pkLockTimer);
+  if (_pkVisHandler) document.removeEventListener('visibilitychange', _pkVisHandler);
+  try { sessionStorage.removeItem('_pk_session'); } catch(_) {}
+  S.wallet.signer    = null;
+  S.wallet.pkMode    = false;
+  S.wallet.connected = false;
+  S.wallet.address   = null;
+  S.walletBal        = 0;
+  stopRouteRefresh();
+  updateWalletUI();
+  dbgW('PK', 'locked — key cleared from memory and sessionStorage');
+}
+
+function openPKModal() {
+  document.getElementById('pkModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('pkInput').focus(), 50);
+}
+function closePKModal() {
+  document.getElementById('pkModal').style.display = 'none';
+  // Overwrite input with garbage before clearing — reduces memory remanence
+  const inp = document.getElementById('pkInput');
+  inp.value = crypto.getRandomValues(new Uint8Array(64)).join('');
+  inp.value = '';
+}
+async function importPK(rawOverride) {
+  const raw = rawOverride || document.getElementById('pkInput')?.value.trim();
+  if (!raw) { toast('Paste your private key first', 'err'); return; }
+  try {
+    const wallet   = new ethers.Wallet(raw, _alchemyProvider);
+
+    // Persist in sessionStorage so page refresh doesn't require re-entry
+    // sessionStorage clears when the tab is closed — acceptable security trade-off
+    try { sessionStorage.setItem('_pk_session', raw); } catch(_) {}
+
+    S.wallet.signer    = wallet;
+    S.wallet.address   = wallet.address;
+    S.wallet.connected = true;
+    S.wallet.pkMode    = true;
+    closePKModal(); // scrubs input field
+
+    // Auto-lock on inactivity
+    _resetPKTimer();
+    ['click','keydown','mousemove'].forEach(e =>
+      document.addEventListener(e, _resetPKTimer, { passive:true }));
+
+    // Auto-lock when tab hidden > 5 min
+    _pkVisHandler = () => {
+      if (document.hidden) {
+        _pkHiddenAt = Date.now();
+      } else {
+        if (_pkHiddenAt && (Date.now() - _pkHiddenAt) > PK_HIDDEN_LOCK_MS) {
+          lockPK();
+          toast('⚡ PK locked — tab was hidden for >5 min', 'warn');
+        }
+        _pkHiddenAt = null;
+      }
+    };
+    document.addEventListener('visibilitychange', _pkVisHandler);
+
+    await refreshBalance();
+    updateWalletUI();
+    dbgOk('PK', `active — addr=${wallet.address.slice(0,10)}… auto-locks in 30 min`);
+    toast('⚡ PK mode active — locks after 30 min idle or 5 min hidden', 'ok');
+    refreshCurrentTokenBalance();
+    if (S.token && S.chain.id === 'base') startRouteRefresh();
+  } catch(e) {
+    dbgE('PK', 'import failed: ' + (e.message || e));
+    console.error('[PK] import error:', e);
+    toast('PK import failed: ' + (e.message || 'unknown error').slice(0, 120), 'err');
+    closePKModal();
+  }
+}
+
+async function ensureBaseChain() {
+  const chainId = await window.ethereum.request({ method:'eth_chainId' });
+  if (chainId === BASE_CHAIN_HEX) return;
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: BASE_CHAIN_HEX }],
+    });
+  } catch(e) {
+    if (e.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{ chainId: BASE_CHAIN_HEX, chainName:'Base',
+          nativeCurrency:{ name:'Ethereum', symbol:'ETH', decimals:18 },
+          rpcUrls:['https://mainnet.base.org'],
+          blockExplorerUrls:['https://basescan.org'] }],
+      });
+    } else throw e;
+  }
+}
+
+async function refreshBalance() {
+  if (!S.wallet.address) return;
+  try {
+    let bal;
+    if (S.wallet.signer) {
+      // Try _alchemyProvider first, fall back to public RPC
+      const rawBal = await _alchemyProvider.getBalance(S.wallet.address).catch(async () => {
+        const res = await fetch('https://base-rpc.publicnode.com', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({jsonrpc:'2.0',method:'eth_getBalance',params:[S.wallet.address,'latest'],id:1}),
+        });
+        const hex = (await res.json())?.result || '0x0';
+        return ethers.BigNumber.from(hex);
+      });
+      bal = Number(ethers.utils.formatEther(rawBal));
+    } else {
+      const hex = await window.ethereum.request({
+        method: 'eth_getBalance', params: [S.wallet.address, 'latest']
+      });
+      bal = parseInt(hex, 16) / 1e18;
+    }
+    S.walletBal = bal;
+    document.getElementById('walletBal').textContent = S.walletBal.toFixed(4) + ' ETH';
+  } catch(_) {}
+}
+
+function updateWalletUI() {
+  const dot  = document.getElementById('walletDot');
+  const bal  = document.getElementById('walletBal');
+  const addr = document.getElementById('walletAddr');
+  const pill = document.getElementById('walletPill');
+
+  if (S.wallet.connected && S.wallet.address) {
+    const a = S.wallet.address;
+    addr.textContent      = (S.wallet.pkMode ? '⚡ ' : '') + a.slice(0,6) + '…' + a.slice(-4);
+    addr.style.color      = S.wallet.pkMode ? '#f0b90b' : 'var(--sub)';
+    addr.style.fontWeight = '';
+    bal.textContent       = S.walletBal.toFixed(4) + ' ETH';
+    dot.style.background  = S.wallet.pkMode ? '#f0b90b' : 'var(--green)';
+    dot.style.boxShadow   = S.wallet.pkMode ? '0 0 6px #f0b90b' : '0 0 5px var(--green)';
+    pill.onclick = S.wallet.pkMode
+      ? () => { if(confirm('Lock PK wallet?')) lockPK(); }
+      : () => { if(confirm('Disconnect wallet?')) disconnectWallet(); };
+    pill.title = S.wallet.pkMode ? '⚡ PK mode — click to lock' : 'Disconnect';
+  } else {
+    addr.textContent      = 'Connect Wallet';
+    addr.style.color      = 'var(--sub)';
+    addr.style.fontWeight = '600';
+    bal.textContent       = '';
+    dot.style.background  = 'var(--muted)';
+    dot.style.boxShadow   = 'none';
+    pill.onclick          = connectWallet;
+    pill.title            = 'Connect wallet';
+  }
+
+  // Update exec button label
+  const sym = S.token?.baseToken?.symbol || '';
+  if (!S.wallet.connected) {
+    document.getElementById('execLabel').textContent = 'Connect Wallet';
+    document.getElementById('execIcon').textContent  = '🔗';
+  } else {
+    document.getElementById('execLabel').textContent = `${S.side.toUpperCase()} ${sym}`;
+    document.getElementById('execIcon').textContent  = '⚡';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOKEN BALANCE (on-chain)
+// ═══════════════════════════════════════════════════════════════
+// maxAge: return cached value if fresher than maxAge ms (0 = always fetch fresh)
+async function fetchTokenBalance(tokenAddr, sym, maxAge = 0) {
+  if (!S.wallet.connected || !S.wallet.address || !tokenAddr) return 0;
+  // Return cached if fresh enough
+  if (maxAge > 0 && S.holdings[sym] != null && S.holdingsTs[sym]) {
+    if (Date.now() - S.holdingsTs[sym] < maxAge) return S.holdings[sym];
+  }
+  try {
+    const provider = S.wallet.signer
+      ? _alchemyProvider
+      : new ethers.providers.Web3Provider(window.ethereum);
+    const token    = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
+    const [bal, dec] = await Promise.all([
+      token.balanceOf(S.wallet.address),
+      token.decimals().catch(() => 18),
+    ]);
+    const human = Number(ethers.utils.formatUnits(bal, dec));
+    S.holdings[sym]   = human;
+    S.holdingsTs[sym] = Date.now();
+    // Store decimals for current token so sells use correct inAmt (not hardcoded 1e18)
+    if (tokenAddr === S.token?.baseToken?.address) S.tokenDec = dec;
+    return human;
+  } catch(_) { return S.holdings[sym] ?? 0; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MULTI-AGGREGATOR ROUTING
+// ═══════════════════════════════════════════════════════════════
+
+// ── Timeout wrapper ──────────────────────────────────────────────
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
+
+// ── Remote event logger (writes to /tmp/memecoin-events.log via log-server.py) ──
+function logEvent(tag, msg) {
+  fetch('http://localhost:9998/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tag, msg }),
+  }).catch(() => {}); // silent if server not running
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TWO-PHASE ROUTING
+//  Phase 1 (background, ~300ms): quote only → cache route params
+//  Phase 2 (on execute click, ~200ms): assemble fresh calldata
+//  This ensures minAmountOut is always current price, never stale.
+// ════════════════════════════════════════════════════════════════
+
+// ── Odos: QUOTE ONLY — stores pathId, assembles fresh on execute ─
+async function _odosQuote(inToken, outToken, inAmt, slip, user) {
+  const res = await fetch('https://api.odos.xyz/sor/quote/v2', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      chainId:8453,
+      inputTokens: [{tokenAddress:inToken, amount:inAmt}],
+      outputTokens:[{tokenAddress:outToken, proportion:1}],
+      slippageLimitPercent:slip, userAddr:user, referralCode:0, compact:false,
+    })
+  });
+  if (!res.ok) { const b = await res.text().catch(()=>''); throw new Error(`odos-q ${res.status}: ${b.slice(0,80)}`); }
+  const q = await res.json();
+  if (!q.pathId) throw new Error('odos: no path');
+  // AIDEV-NOTE: Validate output token matches what we requested. Odos can silently route to a
+  // different token if it doesn't recognise the requested address (observed: requested ROOM
+  // 0x64b6F95... but Odos returned BRETT 0x532f27... — caused wrong buy + ERC20InsufficientBalance
+  // revert on the subsequent sell because user had 0 of the intended token).
+  const receivedOut = q.outputTokens?.[0]?.tokenAddress?.toLowerCase();
+  if (receivedOut && receivedOut !== outToken.toLowerCase()) {
+    throw new Error(`odos: output token mismatch (got ${receivedOut.slice(0,10)}… want ${outToken.slice(0,10)}…)`);
+  }
+  const out = (Number(q.outAmounts?.[0]||0)/1e18).toFixed(6);
+  dbgOk('ODOS', `quote ok → pathId=${q.pathId.slice(0,8)}… out=${out}`);
+  return { via:'Odos', outAmount:BigInt(q.outAmounts?.[0]||'0'), type:'odos', pathId:q.pathId, user };
+}
+
+// ── KyberSwap: buys only (ETH→token via WETH wrap) ──────────────
+// AIDEV-NOTE: KyberSwap API on Base requires WETH (0x4200...0006) as tokenIn, not address(0) or
+// the ETH sentinel. For buys, we wrap ETH→WETH before the swap (handled in execute step 4).
+// Sells disabled: KyberSwap routes to WETH not native ETH — use Relay/UniV4 for sells instead.
+async function _kyberQuote(inToken, outToken, inAmt, slip, user) {
+  const isBuy = inToken === '0x0000000000000000000000000000000000000000';
+  if (!isBuy) throw new Error('kyber: sells disabled (outputs WETH not ETH)');
+  const kyberIn  = WETH_BASE; // WETH — user wraps ETH before calling router
+  const kyberOut = outToken;
+  const res = await fetch(
+    `https://aggregator-api.kyberswap.com/base/api/v1/routes?tokenIn=${kyberIn}&tokenOut=${kyberOut}&amountIn=${inAmt}&saveGas=0&gasInclude=true`,
+    { headers:{ 'x-client-id':'sigma' } }
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(()=>'');
+    throw new Error(`kyber-q ${res.status}: ${body.slice(0,80)}`);
+  }
+  const j = await res.json();
+  const summary = j.data?.routeSummary;
+  if (!summary) throw new Error('kyber: no route');
+  const out = (Number(summary.amountOut||0)/1e18).toFixed(6);
+  dbgOk('KYBER', `quote ok → out=${out}`);
+  return {
+    via:'KyberSwap', outAmount:BigInt(summary.amountOut||'0'), type:'kyber',
+    routeSummary: summary, kyberIn, kyberOut, inAmt,
+  };
+}
+
+// ── Relay: quote+tx in one call, store args for fresh re-fetch ──
+let _relayBackoffUntil = 0;
+let _relayLastQuote = 0;
+const RELAY_MIN_INTERVAL = 1500; // prevent burst spam → 429s (quote cycles can fire rapidly)
+async function _relayQuote(inToken, outToken, inAmt, slip, user) {
+  if (Date.now() < _relayBackoffUntil) throw new Error('relay-backoff');
+  if (Date.now() - _relayLastQuote < RELAY_MIN_INTERVAL) throw new Error('relay-throttle');
+  _relayLastQuote = Date.now();
+  const res = await fetch('https://api.relay.link/quote', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      originChainId:8453, destinationChainId:8453,
+      originCurrency:inToken, destinationCurrency:outToken,
+      amount:inAmt, tradeType:'EXACT_INPUT', recipient:user, user,
+    })
+  });
+  if (res.status === 429) { _relayBackoffUntil = Date.now() + 15000; throw new Error('relay-429-backoff'); }
+  if (!res.ok) throw new Error(`relay-q ${res.status}`);
+  const r = await res.json();
+  const swapStep = (r.steps||[]).find(s => s.id==='swap');
+  const tx = swapStep?.items?.[0]?.data;
+  if (!tx?.to) throw new Error('relay: no tx');
+  const outRaw = r.details?.currencyOut?.amount || '0';
+  if (BigInt(outRaw) < 1000n) throw new Error('relay: dust output'); // < 1000 wei = invalid route
+  dbgOk('RELAY', `quote ok → out=${(Number(outRaw)/1e18).toFixed(6)}`);
+  return {
+    via:'Relay', outAmount:BigInt(outRaw), type:'relay',
+    // store args to re-fetch on execute (solver steps expire)
+    args:{ inToken, outToken, inAmt, slip, user },
+  };
+}
+
+// ── OKX HMAC signing ────────────────────────────────────────────
+async function _okxSign(method, path, body='') {
+  const ts  = new Date().toISOString().replace(/(\.\d{3})\d*Z/,'$1Z');
+  const msg = ts + method + path + body;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(OKX_SECRET),
+    {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return { ts, b64: btoa(String.fromCharCode(...new Uint8Array(sig))) };
+}
+
+// ── OKX: quote+tx, store args for fresh re-fetch ────────────────
+let _okxBackoffUntil = 0;
+let _okxLastCall = 0;
+const OKX_MIN_INTERVAL = 12000; // max ~5 calls/min to avoid 429
+async function _okxQuote(inToken, outToken, inAmt, slip, user) {
+  if (!OKX_API_KEY || !OKX_SECRET || !OKX_PASSPHRASE) throw new Error('no-okx-creds');
+  if (Date.now() < _okxBackoffUntil) throw new Error('okx-backoff');
+  if (Date.now() - _okxLastCall < OKX_MIN_INTERVAL) throw new Error('okx-throttle');
+  _okxLastCall = Date.now();
+  // OKX: use ETH sentinel for native ETH — router handles ETH wrapping natively
+  const ETH_OKX = '0xEeeeeEeeeEeEeeEeEeEeeEEEEeeEEEEeeEEEEEe';
+  const okxIn  = inToken  ==='0x0000000000000000000000000000000000000000' ? ETH_OKX  : inToken;
+  const okxOut = outToken ==='0x0000000000000000000000000000000000000000' ? ETH_OKX  : outToken;
+  const qs   = `chainIndex=8453&amount=${inAmt}&fromTokenAddress=${okxIn}&toTokenAddress=${okxOut}&userWalletAddress=${user}&slippagePercent=${slip.toFixed(2)}`;
+  const path = `/api/v6/dex/aggregator/swap?${qs}`;
+  const { ts, b64 } = await _okxSign('GET', path);
+  const res = await fetch(`https://www.okx.com${path}`, {
+    headers:{'OK-ACCESS-KEY':OKX_API_KEY,'OK-ACCESS-SIGN':b64,'OK-ACCESS-TIMESTAMP':ts,'OK-ACCESS-PASSPHRASE':OKX_PASSPHRASE,'Content-Type':'application/json'}
+  });
+  if (res.status === 429) { _okxBackoffUntil = Date.now() + 15000; throw new Error('okx-429-backoff'); }
+  if (!res.ok) { const b = await res.text().catch(()=>''); throw new Error(`okx-q ${res.status}: ${b.slice(0,120)}`); }
+  const json = await res.json();
+  if (json.code !== '0' || !json.data?.[0]) throw new Error('okx[' + json.code + ']: ' + (json.msg||'unknown'));
+  const d = json.data[0];
+  dbgOk('OKX', `quote ok → out=${(Number(d.routerResult?.toTokenAmount||0)/1e18).toFixed(6)}`);
+  return {
+    via:'OKX', outAmount:BigInt(d.routerResult?.toTokenAmount||'0'), type:'okx',
+    args:{ inToken, outToken, inAmt, slip, user },
+  };
+}
+
+// ── Phase 2: assemble fresh calldata from cached route params ────
+async function buildTxFromCache(route, user, slip) {
+  switch (route.type) {
+
+    case 'odos': {
+      const res = await fetch('https://api.odos.xyz/sor/assemble', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          userAddr: user,
+          pathId:   route.pathId,
+          simulate: false,                  // skip simulation — saves 500-2000ms, Base reverts cost ~$0.10
+          slippageLimitPercent: slip,       // always explicit, never rely on quote default
+        })
+      });
+      if (!res.ok) throw new Error('odos-assemble ' + res.status);
+      const j = await res.json();
+      if (j.simulation && !j.simulation.isSuccess) {
+        const reason = j.simulation.simulationError?.errorMessage || 'price impact';
+        dbgE('ODOS', `sim failed: ${reason}`);
+        throw new Error('odos: sim failed — ' + reason);
+      }
+      if (j.simulation?.isSuccess) dbgOk('ODOS', `sim ok → gasUsed=${j.simulation.gasEstimate||'?'}`);
+      const sw = j.transaction;
+      if (!sw?.to) throw new Error('odos: no tx');
+      return { to:sw.to, data:sw.data, value:String(sw.value||'0'), gas:Math.ceil((sw.gas||300000)*1.25) };
+    }
+
+
+    case 'kyber': {
+      // POST /route/build with fresh deadline + slippage → prevents stale minAmountOut
+      const isEthBuy = route.ethBuy;
+      const res = await fetch('https://aggregator-api.kyberswap.com/base/api/v1/route/build', {
+        method:'POST', headers:{'Content-Type':'application/json','x-client-id':'sigma'},
+        body: JSON.stringify({
+          routeSummary:     route.routeSummary,
+          recipient:        user,
+          sender:           user,
+          slippageTolerance: Math.round(slip * 100), // bps: 1% = 100
+          deadline:         Math.floor(Date.now()/1000) + 300,
+          source:           'sigma',
+        })
+      });
+      if (!res.ok) throw new Error('kyber-build ' + res.status);
+      const j = await res.json();
+      const encoded = j.data?.encodedSwapData || j.data?.data;
+      if (!encoded) throw new Error('kyber: no calldata');
+      const routerAddr = j.data?.routerAddress || KYBER_ROUTER;
+      // AIDEV-NOTE: value='0' always — for buys, ETH is pre-wrapped to WETH in execute step 4.
+      // KyberSwap router pulls WETH via transferFrom, not msg.value.
+      return {
+        to:    routerAddr,
+        data:  encoded,
+        value: '0',
+        gas:   Math.ceil((j.data?.gas || 350000) * 1.25),
+        _routeType: 'kyber', // carried through so execute step 4 knows to wrap ETH→WETH
+      };
+    }
+
+    case 'relay': {
+      // Always re-fetch — solver steps expire within seconds
+      if (Date.now() < _relayBackoffUntil) throw new Error('relay-backoff');
+      const a = route.args;
+      const res = await fetch('https://api.relay.link/quote', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          originChainId:8453, destinationChainId:8453,
+          originCurrency:a.inToken, destinationCurrency:a.outToken,
+          amount:a.inAmt, tradeType:'EXACT_INPUT', recipient:a.user, user:a.user,
+        })
+      });
+      if (res.status === 429) { _relayBackoffUntil = Date.now() + 30000; throw new Error('relay-build-429'); }
+      if (!res.ok) throw new Error(`relay-build failed ${res.status}`);
+      const r = await res.json();
+      const swapStep = (r.steps||[]).find(s => s.id==='swap');
+      const tx = swapStep?.items?.[0]?.data;
+      if (!tx?.to) throw new Error('relay: no tx');
+      return { to:tx.to, data:tx.data, value:String(tx.value||'0'), gas:Math.ceil((tx.gas||400000)*1.25) };
+    }
+
+    case 'okx': {
+      // Re-fetch OKX with fresh timestamp — calldata has embedded price
+      const a = route.args;
+      const ETH_OKX = '0xEeeeeEeeeEeEeeEeEeEeeEEEEeeEEEEeeEEEEEe';
+      const okxIn  = a.inToken  ==='0x0000000000000000000000000000000000000000' ? ETH_OKX  : a.inToken;
+      const okxOut = a.outToken ==='0x0000000000000000000000000000000000000000' ? ETH_OKX  : a.outToken;
+      const qs     = `chainIndex=8453&amount=${a.inAmt}&fromTokenAddress=${okxIn}&toTokenAddress=${okxOut}&userWalletAddress=${a.user}&slippagePercent=${(+a.slip).toFixed(2)}`;
+      const path   = `/api/v6/dex/aggregator/swap?${qs}`;
+      const { ts, b64 } = await _okxSign('GET', path);
+      const res = await fetch(`https://www.okx.com${path}`, {
+        headers:{'OK-ACCESS-KEY':OKX_API_KEY,'OK-ACCESS-SIGN':b64,'OK-ACCESS-TIMESTAMP':ts,'OK-ACCESS-PASSPHRASE':OKX_PASSPHRASE,'Content-Type':'application/json'}
+      });
+      if (!res.ok) throw new Error('okx-build failed');
+      const json = await res.json();
+      if (json.code !== '0' || !json.data?.[0]) throw new Error('okx[' + json.code + ']: ' + (json.msg||'unknown'));
+      const d = json.data[0];
+      const isEthIn = route.args.inToken === '0x0000000000000000000000000000000000000000';
+      const txVal = String(d.tx.value || '0');
+      // Safety: if ETH buy but router returned value=0, calldata expects WETH ERC20 — would revert
+      if (isEthIn && txVal === '0') throw new Error('okx: ETH buy got value=0, skip');
+      return { to:d.tx.to, data:d.tx.data, value:txVal, gas:Math.ceil((parseInt(d.tx.gas||'300000')||300000)*1.25) };
+    }
+
+    case 'univ3': {
+      // SwapRouter02: buys send ETH value (router wraps), sells multicall(exactInputSingle→router, unwrapWETH9→user)
+      const a = route.args;
+      const isBuy = a.inToken === '0x0000000000000000000000000000000000000000';
+      const tknIn  = isBuy ? WETH_BASE : a.inToken;
+      const tknOut = isBuy ? a.outToken : WETH_BASE;
+      const minOut = (route.outAmount * BigInt(Math.round((100 - slip) * 100)) / 10000n).toString();
+      const deadline = Math.floor(Date.now()/1000) + 300;
+      const iface = new ethers.utils.Interface([
+        'function exactInputSingle(tuple(address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96)) returns (uint256)',
+        'function unwrapWETH9(uint256 amountMinimum,address recipient)',
+        'function multicall(uint256 deadline,bytes[] calldata data) returns (bytes[])',
+      ]);
+      const ADDRESS_THIS = '0x0000000000000000000000000000000000000002'; // SwapRouter02 magic constant
+      if (isBuy) {
+        const swapData = iface.encodeFunctionData('exactInputSingle', [
+          { tokenIn:tknIn, tokenOut:tknOut, fee:a.fee, recipient:user, amountIn:a.inAmt, amountOutMinimum:minOut, sqrtPriceLimitX96:0 }
+        ]);
+        const calldata = iface.encodeFunctionData('multicall', [deadline, [swapData]]);
+        return { to:UNI_V3_ROUTER, data:calldata, value:a.inAmt, gas:280000 };
+      } else {
+        // Sell: swap token→WETH to router, then unwrap to user
+        const swapData = iface.encodeFunctionData('exactInputSingle', [
+          { tokenIn:tknIn, tokenOut:tknOut, fee:a.fee, recipient:ADDRESS_THIS, amountIn:a.inAmt, amountOutMinimum:0, sqrtPriceLimitX96:0 }
+        ]);
+        const unwrapData = iface.encodeFunctionData('unwrapWETH9', [minOut, user]);
+        const calldata   = iface.encodeFunctionData('multicall', [deadline, [swapData, unwrapData]]);
+        return { to:UNI_V3_ROUTER, data:calldata, value:'0', gas:320000 };
+      }
+    }
+
+    case 'univ4': {
+      // Universal Router V2: execute(0x10=V4_SWAP, [v4Input], deadline)
+      const a = route.args;
+      const ETH = '0x0000000000000000000000000000000000000000';
+      const ZERO_HOOKS = '0x0000000000000000000000000000000000000000';
+      const isBuy = a.inToken === ETH;
+      const currency0 = ETH;
+      const currency1 = isBuy ? a.outToken : a.inToken;
+      const zeroForOne = isBuy;
+      const minOut = (route.outAmount * BigInt(Math.round((100 - slip) * 100)) / 10000n).toString();
+      const deadline  = Math.floor(Date.now()/1000) + 300;
+
+      // V4Router actions (from v4-periphery Actions.sol)
+      const SWAP_EXACT_IN_SINGLE = 0x04;
+      const SETTLE_ALL           = 0x0a;
+      const TAKE_ALL             = 0x0d;
+      const actions = ethers.utils.hexlify(new Uint8Array([SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL]));
+
+      // Encode ExactInputSingleParams for SWAP_EXACT_IN_SINGLE
+      const swapParams = ethers.utils.defaultAbiCoder.encode(
+        ['tuple(tuple(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,bytes hookData)'],
+        [[
+          [currency0, currency1, a.fee, a.tickSpacing, ZERO_HOOKS],
+          zeroForOne, a.inAmt, minOut, '0x'
+        ]]
+      );
+      // SETTLE_ALL: (currency, maxAmount) — settle the input token
+      const inCurrency  = isBuy ? ETH : a.inToken;
+      const outCurrency = isBuy ? a.outToken : ETH;
+      const settleParams = ethers.utils.defaultAbiCoder.encode(['address','uint256'], [inCurrency, ethers.constants.MaxUint256]);
+      const takeParams   = ethers.utils.defaultAbiCoder.encode(['address','uint256'], [outCurrency, minOut]);
+
+      // V4 swap command input: abi.encode(actions, params[])
+      const v4Input = ethers.utils.defaultAbiCoder.encode(
+        ['bytes','bytes[]'], [actions, [swapParams, settleParams, takeParams]]
+      );
+
+      const routerIface = new ethers.utils.Interface([
+        'function execute(bytes commands,bytes[] inputs,uint256 deadline) payable',
+      ]);
+      const commands = ethers.utils.hexlify(new Uint8Array([0x10])); // V4_SWAP
+      const calldata = routerIface.encodeFunctionData('execute', [commands, [v4Input], deadline]);
+      return { to:UNI_V4_ROUTER, data:calldata, value:isBuy ? a.inAmt : '0', gas:350000 };
+    }
+
+    case 'paraswap': {
+      const a = route.args;
+      const body = JSON.stringify({
+        srcToken: a.src, destToken: a.dst, srcAmount: a.inAmt,
+        slippage: Math.round(a.slip * 100), // bps
+        priceRoute: a.priceRoute, userAddress: a.user, txOrigin: a.user,
+      });
+      const res = await fetch('https://apiv5.paraswap.io/transactions/8453?ignoreChecks=true', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body,
+      });
+      if (!res.ok) throw new Error('ps-build ' + res.status);
+      const j = await res.json();
+      if (!j.data || !j.to) throw new Error('ps: no calldata');
+      return { to:j.to, data:j.data, value:String(j.value||'0'), gas:Math.ceil((parseInt(j.gas||'350000')||350000)*1.25) };
+    }
+
+    default: throw new Error('unknown route type');
+  }
+}
+
+// ── Paraswap: quote+build — broad token coverage, own solver network ─
+async function _paraswapQuote(inToken, outToken, inAmt, slip, user) {
+  const ETH_PS = '0xEeeeeEeeeEeEeeEeEeEeeEEEEeeEEEEeeEEEEEe';
+  const src = inToken  === '0x0000000000000000000000000000000000000000' ? ETH_PS : inToken;
+  const dst = outToken === '0x0000000000000000000000000000000000000000' ? ETH_PS : outToken;
+  const qs  = `srcToken=${src}&destToken=${dst}&amount=${inAmt}&srcDecimals=18&destDecimals=18&side=SELL&network=8453&userAddress=${user}`;
+  const res = await fetch(`https://apiv5.paraswap.io/prices?${qs}`);
+  if (!res.ok) throw new Error('ps-q ' + res.status);
+  const j = await res.json();
+  const pr = j.priceRoute;
+  if (!pr?.destAmount || pr.destAmount === '0') throw new Error('ps: no route');
+  dbgOk('PARASWAP', `quote ok → out=${(Number(pr.destAmount)/1e18).toFixed(6)}`);
+  return {
+    via:'Paraswap', outAmount:BigInt(pr.destAmount), type:'paraswap',
+    args:{ src, dst, inAmt, slip, user, priceRoute: pr },
+  };
+}
+
+// ── Uniswap V3: quote via QuoterV2 eth_call, best fee tier wins ──
+async function _uniswapV3Quote(inToken, outToken, inAmt, slip, user) {
+  // V3 uses WETH for native ETH; buy=eth→WETH→token, sell=token→WETH→eth (unwrap in build)
+  const tknIn  = inToken  === '0x0000000000000000000000000000000000000000' ? WETH_BASE : inToken;
+  const tknOut = outToken === '0x0000000000000000000000000000000000000000' ? WETH_BASE : outToken;
+  const iface = new ethers.utils.Interface([
+    'function quoteExactInputSingle(tuple(address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96) params) returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32 initializedTicksCrossed,uint256 gasEstimate)',
+  ]);
+  const fees = [500, 3000, 10000, 100]; // try most-common first
+  const settled = await Promise.allSettled(fees.map(async fee => {
+    const data = iface.encodeFunctionData('quoteExactInputSingle', [
+      { tokenIn:tknIn, tokenOut:tknOut, amountIn:inAmt, fee, sqrtPriceLimitX96:0 }
+    ]);
+    const r = await fetch(BASE_RPC, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:UNI_V3_QUOTER,data},'latest']}),
+    });
+    const j = await r.json();
+    if (j.error || !j.result || j.result === '0x') throw new Error(`v3:noop fee=${fee}`);
+    const [amountOut] = iface.decodeFunctionResult('quoteExactInputSingle', j.result);
+    const out = BigInt(amountOut.toString());
+    if (out === 0n) throw new Error(`v3:zero fee=${fee}`);
+    return { fee, amountOut: out };
+  }));
+  const valid = settled
+    .filter(r => r.status === 'fulfilled' && r.value.amountOut > 0n)
+    .map(r => r.value)
+    .sort((a, b) => a.amountOut > b.amountOut ? -1 : 1);
+  if (!valid.length) throw new Error('univ3: no pool');
+  const best = valid[0];
+  dbgOk('UNIV3', `quote ok fee=${best.fee} out=${(Number(best.amountOut)/1e18).toFixed(6)}`);
+  return {
+    via:'UniV3', outAmount:best.amountOut, type:'univ3',
+    args:{ inToken, outToken, inAmt, slip, fee:best.fee },
+  };
+}
+
+// ── Uniswap V4: quote via V4Quoter eth_call (ETH = address(0), no WETH needed) ──
+async function _uniswapV4Quote(inToken, outToken, inAmt, slip, user) {
+  const ETH = '0x0000000000000000000000000000000000000000';
+  const ZERO_HOOKS = '0x0000000000000000000000000000000000000000';
+  // V4 currency sort: currency0 < currency1 by address
+  const isBuy = inToken === ETH;
+  // ETH (address(0)) is always currency0; token is always > 0 in address
+  const currency0 = ETH;
+  const currency1 = isBuy ? outToken : inToken;
+  const zeroForOne = isBuy; // ETH→token = 0→1 = true; token→ETH = 1→0 = false
+  const iface = new ethers.utils.Interface([
+    'function quoteExactInputSingle(tuple(tuple(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 exactAmount,bytes hookData) params) returns (uint256 amountOut,uint256 gasEstimate)',
+  ]);
+  // Common fee/tickSpacing pairs on V4
+  const pools = [
+    { fee: 3000, tickSpacing: 60 },
+    { fee: 500,  tickSpacing: 10 },
+    { fee: 10000,tickSpacing: 200 },
+    { fee: 100,  tickSpacing:  1 },
+  ];
+  const settled = await Promise.allSettled(pools.map(async ({ fee, tickSpacing }) => {
+    const data = iface.encodeFunctionData('quoteExactInputSingle', [{
+      poolKey: { currency0, currency1, fee, tickSpacing, hooks: ZERO_HOOKS },
+      zeroForOne,
+      exactAmount: inAmt,
+      hookData: '0x',
+    }]);
+    const r = await fetch(BASE_RPC, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:UNI_V4_QUOTER,data},'latest']}),
+    });
+    const j = await r.json();
+    if (j.error || !j.result || j.result === '0x') throw new Error(`v4:noop fee=${fee}`);
+    const [amountOut] = iface.decodeFunctionResult('quoteExactInputSingle', j.result);
+    const out = BigInt(amountOut.toString());
+    if (out === 0n) throw new Error(`v4:zero fee=${fee}`);
+    return { fee, tickSpacing, amountOut: out };
+  }));
+  const valid = settled
+    .filter(r => r.status === 'fulfilled' && r.value.amountOut > 0n)
+    .map(r => r.value)
+    .sort((a, b) => a.amountOut > b.amountOut ? -1 : 1);
+  if (!valid.length) throw new Error('univ4: no pool');
+  const best = valid[0];
+  dbgOk('UNIV4', `quote ok fee=${best.fee} out=${(Number(best.amountOut)/1e18).toFixed(6)}`);
+  return {
+    via:'UniV4', outAmount:best.amountOut, type:'univ4',
+    args:{ inToken, outToken, inAmt, slip, fee:best.fee, tickSpacing:best.tickSpacing },
+  };
+}
+
+// ── Phase 1: quote all aggregators, pick best, cache route params ─
+async function runQuoteCycle() {
+  if (!S.wallet.connected || !S.token || S.chain.id !== 'base') return;
+  const amt = +(document.getElementById('amtInp')?.value || 0);
+  if (!amt || amt <= 0) return;
+  const tokenAddr = S.token.baseToken?.address;
+  if (!tokenAddr) return;
+
+  const slip    = +S.slip || 2;
+  const isBuy   = S.side === 'buy';
+  const inToken = isBuy  ? '0x0000000000000000000000000000000000000000' : tokenAddr;
+  const outToken= isBuy  ? tokenAddr : '0x0000000000000000000000000000000000000000';
+  // Buy: ETH in (18 dec). Sell: token in (actual decimals — wrong for 9-dec tokens like CHECK if hardcoded 1e18)
+  const inDec   = isBuy ? 18 : (S.tokenDec || 18);
+  const inAmt   = ethers.utils.parseUnits(amt.toFixed(Math.min(inDec, 8)), inDec).toString();
+  const user    = S.wallet.address;
+
+  // Quote only — no assembly. Fast: ~300ms per aggregator.
+  dbg('ROUTE', `quoting ${isBuy?'BUY':'SELL'} ${amt} @ slip=${slip}% dec=${inDec}`);
+  const FAST_MS = 1000; // KyberSwap/Relay/OKX respond in <700ms typically; 1000ms avoids false timeouts
+  const ODOS_MS = 2000; // Odos is slower but covers tokens others miss
+
+  // Start all aggregators in parallel; fast ones (Relay/OKX/V3/V4) resolve first, Odos waits full window
+  const V3V4_MS = 1200; // eth_call latency: ~300-600ms per fee tier, 4 in parallel
+  const RELAY_SLOW_MS = 3000; // Relay slow-path retry — covers latency spikes >1s (e.g. ZEEBOT: 2.3s)
+  const odosP = withTimeout(_odosQuote(inToken, outToken, inAmt, slip, user), ODOS_MS)
+                  .then(v=>({status:'fulfilled',value:v})).catch(e=>({status:'rejected',reason:e}));
+  // Start slow Relay alongside odosP so it has 3s from t=0; only awaited if fast pass totally fails
+  const relaySlowP = withTimeout(_relayQuote(inToken, outToken, inAmt, slip, user), RELAY_SLOW_MS)
+                       .then(v=>({status:'fulfilled',value:v})).catch(e=>({status:'rejected',reason:e}));
+  const [fastKyber, fastRelay, fastOkx, fastV3, fastV4] = await Promise.allSettled([
+    withTimeout(_kyberQuote(inToken, outToken, inAmt, slip, user),    FAST_MS),
+    withTimeout(_relayQuote(inToken, outToken, inAmt, slip, user),    FAST_MS),
+    withTimeout(_okxQuote(inToken, outToken, inAmt, slip, user),      FAST_MS),
+    withTimeout(_uniswapV3Quote(inToken, outToken, inAmt, slip, user),V3V4_MS),
+    withTimeout(_uniswapV4Quote(inToken, outToken, inAmt, slip, user),V3V4_MS),
+  ]);
+  const fastValid = [fastKyber, fastRelay, fastOkx, fastV3, fastV4]
+    .filter(r => r.status === 'fulfilled' && r.value?.outAmount > 0n);
+
+  // If fast aggs found nothing, wait for Odos AND slow-path Relay (both started at t=0)
+  // This covers tokens where Relay is the only route but spikes >1s (would timeout in fast pass)
+  let odosResult, relaySlowResult;
+  if (fastValid.length === 0) {
+    [odosResult, relaySlowResult] = await Promise.all([odosP, relaySlowP]);
+  } else {
+    odosResult = await Promise.race([odosP, new Promise(r => setTimeout(() => r({status:'rejected',reason:'skip'}), 800))]);
+    relaySlowResult = { status:'rejected', reason:'skip' };
+  }
+
+  const results = [fastKyber, fastRelay, fastOkx, fastV3, fastV4, odosResult, relaySlowResult];
+  const names = ['KyberSwap','Relay','OKX','UniV3','UniV4','Odos','Relay(slow)'];
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      dbgW(names[i], `quote fail: ${r.reason?.message || r.reason}`);
+      logEvent('QUOTE_FAIL', `${names[i]}: ${r.reason?.message || r.reason}`);
+    } else if (r.value?.outAmount > 0n) {
+      logEvent('QUOTE_OK', `${names[i]}: out=${(Number(r.value.outAmount)/1e18).toFixed(6)}`);
+    }
+  });
+
+  // AIDEV-NOTE: Minimum ETH output filter for sells — routes returning < 0.000001 ETH are garbage.
+  // Honeypot tokens pass the outAmount > 0n check with a near-zero value, causing the code to
+  // build + submit a doomed tx (reverts on-chain). Reject those routes early.
+  const MIN_ETH_OUT = BigInt('1000000000000'); // 0.000001 ETH (1e12 wei)
+  const rawValid = results.filter(r => r.status === 'fulfilled' && r.value?.outAmount > 0n);
+  const valid = rawValid
+    .filter(r => isBuy || r.value.outAmount >= MIN_ETH_OUT)
+    .map(r => r.value)
+    .sort((a, b) => (a.outAmount > b.outAmount ? -1 : 1));
+
+  if (!valid.length) {
+    if (!isBuy && rawValid.length > 0) {
+      // Routes existed but all returned near-zero ETH — honeypot signal
+      logEvent('HONEYPOT_WARN', `sell returned ~0 ETH on all ${rawValid.length} route(s) — token likely not sellable`);
+      dbgE('ROUTE', 'sell quotes returned ~0 ETH — possible honeypot, skipping');
+    } else {
+      dbgE('ROUTE','all aggregators failed');
+    }
+    return;
+  }
+  const ts   = Date.now();
+  const best = valid[0];
+
+  // Cache ALL routes (best→worst) so execute can fall back if one fails
+  S.allRoutes  = valid.map(r => ({ ...r, inAmt, slip, ts }));
+  S.routeCache = S.allRoutes[0];
+
+  // AIDEV-NOTE: If best route changed since last txCache build, invalidate txCache immediately.
+  // Without this, execute uses a stale pre-built tx (e.g. UniV4) even though a newer cycle
+  // selected a different/better route (e.g. Relay), causing reverts when the thin UniV4 pool
+  // moved in the ~5s between cache build and click.
+  if (S.txCache && S.txCache.via !== S.routeCache.via) {
+    logEvent('CACHE', `txCache cleared — route changed ${S.txCache.via} → ${S.routeCache.via}`);
+    S.txCache = null;
+  }
+
+  // Pre-fetch nonce + gas price in background (eliminates 2 RPC calls from send path)
+  prefetchTxParams();
+
+  // Pre-assemble in background — race all routes in parallel, first success wins
+  if (user) {
+    const snapshot = S.allRoutes.slice();
+    (async () => {
+      const result = await new Promise((resolve) => {
+        let failed = 0;
+        for (const preRoute of snapshot) {
+          buildTxFromCache(preRoute, user, slip)
+            .then(swap => resolve({ swap, via: preRoute.via }))
+            .catch(e => {
+              logEvent('PRE_ERR', `${preRoute.via}: ${e.message}`);
+              if (++failed === snapshot.length) resolve(null);
+            });
+        }
+      });
+      if (!result || S.allRoutes[0] !== snapshot[0]) return; // stale or all failed
+      S.txCache = { swap: result.swap, via: result.via, inAmt, ts: Date.now() };
+      dbgOk('PRE', `pre-assembled via ${result.via}`);
+      logEvent('PRE_OK', `pre-assembled via ${result.via}`);
+      // Pre-sign with predicted nonce so click→broadcast skips signing entirely
+      if (S.wallet.signer && S._nonce !== null) {
+        const _cacheRef = S.txCache; // capture reference — check after async sign to detect replacement
+        const _gasHit = S._gasData && (Date.now() - S._gasDataTs < 15000);
+        const _gas = _gasHit
+          ? { maxFeePerGas: S._gasData.maxFeePerGas, maxPriorityFeePerGas: S._gasData.maxPriorityFeePerGas }
+          : { maxFeePerGas: ethers.utils.parseUnits('5', 'gwei'), maxPriorityFeePerGas: ethers.utils.parseUnits('0.001', 'gwei') };
+        const _nonce = S._nonce;
+        S.wallet.signer.signTransaction({
+          to: result.swap.to, data: result.swap.data,
+          value: ethers.BigNumber.from(result.swap.value || '0'),
+          gasLimit: ethers.BigNumber.from(result.swap.gas || 300000),
+          nonce: _nonce, chainId: 8453, type: 2, ..._gas,
+        }).then(rawTx => {
+          if (S.txCache === _cacheRef) { // still the same cache object (not replaced by a new cycle)
+            S.txCache.rawTx = rawTx;
+            S.txCache.signedNonce = _nonce;
+            logEvent('PRE_SIGNED', `pre-signed nonce=${_nonce} via ${result.via}`);
+          }
+        }).catch(() => {});
+      }
+      // Pre-check allowance for sells
+      if (!isBuy && result.swap?.to && S.wallet.signer) {
+        const tkAddr = S.token.baseToken?.address;
+        const aKey = `${tkAddr}-${result.swap.to}`;
+        if (!S.approvedFor[aKey] && tkAddr) {
+          new ethers.Contract(tkAddr, ERC20_ABI, S.wallet.signer)
+            .allowance(user, result.swap.to)
+            .then(cur => {
+              if (cur.gte(ethers.BigNumber.from(inAmt))) {
+                S.approvedFor[aKey] = true;
+              }
+            }).catch(() => {});
+        }
+      }
+    })();
+    // Also pre-warm the opposite side so switching tabs is instant
+    preWarmOppositeSide();
+  }
+
+  // Update UI with estimated output
+  // Buy output = token (use actual decimals); sell output = ETH (always 18 dec)
+  const outDec = isBuy ? (S.tokenDec || 18) : 18;
+  const outAmt = Number(ethers.utils.formatUnits(String(best.outAmount), outDec));
+  const minOut = outAmt * (1 - slip / 100);
+  const sym    = S.token.baseToken.symbol;
+  if (isBuy) {
+    document.getElementById('oiTokens').textContent = `~${fmtCompact(outAmt, false)} ${sym}`;
+    document.getElementById('oiMin').textContent    = `${fmtCompact(minOut, false)} ${sym}`;
+  } else {
+    document.getElementById('oiTokens').textContent = `~${outAmt.toFixed(6)} ETH`;
+    document.getElementById('oiMin').textContent    = `${minOut.toFixed(6)} ETH`;
+  }
+  document.getElementById('oiImpact').textContent = best.via;
+  document.getElementById('oiFee').textContent    = valid.map(r => r.via).join(' · ');
+}
+
+// ── Pre-warm opposite side in background ─────────────────────────
+// After current side assembles, quote+build the other side so switching tabs is instant
+async function preWarmOppositeSide() {
+  try {
+    if (!S.wallet.connected || !S.token || S.chain.id !== 'base') return;
+    const tokenAddr = S.token.baseToken?.address;
+    const sym       = S.token.baseToken?.symbol;
+    if (!tokenAddr || !sym) return;
+    const user    = S.wallet.address;
+    const slip    = +S.slip || 2;
+    const oppSide = S.side === 'buy' ? 'sell' : 'buy';
+    const oppIn   = oppSide === 'buy' ? '0x0000000000000000000000000000000000000000' : tokenAddr;
+    const oppOut  = oppSide === 'buy' ? tokenAddr : '0x0000000000000000000000000000000000000000';
+
+    const held = oppSide === 'sell' ? (S.holdings[sym] || 0) : 0;
+    const preset = +(document.getElementById('amtInp')?.value || S.preset || 0.1);
+    const humanAmt = oppSide === 'sell' ? held : preset;
+    if (humanAmt <= 0) return;
+    const oppAmt = String(BigInt(Math.round(humanAmt * 1e18)));
+
+    // Quick quote for opposite side — all aggs in parallel
+    const [r1, r2, r3, r4, r5, r6] = await Promise.allSettled([
+      withTimeout(_kyberQuote(oppIn, oppOut, oppAmt, slip, user),    1200),
+      withTimeout(_relayQuote(oppIn, oppOut, oppAmt, slip, user),    1200),
+      withTimeout(_okxQuote(oppIn, oppOut, oppAmt, slip, user),      1200),
+      withTimeout(_odosQuote(oppIn, oppOut, oppAmt, slip, user),     2000),
+      withTimeout(_uniswapV3Quote(oppIn, oppOut, oppAmt, slip, user),1500),
+      withTimeout(_uniswapV4Quote(oppIn, oppOut, oppAmt, slip, user),1500),
+    ]);
+    const valid = [r1, r2, r3, r4, r5, r6]
+      .filter(r => r.status === 'fulfilled' && r.value?.outAmount > 0n)
+      .map(r => r.value)
+      .sort((a, b) => (a.outAmount > b.outAmount ? -1 : 1));
+    if (!valid.length) return;
+
+    const best = { ...valid[0], inAmt: oppAmt, slip, ts: Date.now() };
+    const swap = await buildTxFromCache(best, user, slip);
+    S.txCacheAlt = { swap, via: best.via, inAmt: oppAmt, side: oppSide, ts: Date.now() };
+    logEvent('PRE_ALT', `pre-warmed ${oppSide.toUpperCase()} via ${best.via}`);
+
+    // Pre-sign if nonce is known
+    if (S.wallet.signer && S._nonce !== null) {
+      const _gasHit = S._gasData && (Date.now() - S._gasDataTs < 15000);
+      const _gas = _gasHit
+        ? { maxFeePerGas: S._gasData.maxFeePerGas, maxPriorityFeePerGas: S._gasData.maxPriorityFeePerGas }
+        : { maxFeePerGas: ethers.utils.parseUnits('5', 'gwei'), maxPriorityFeePerGas: ethers.utils.parseUnits('0.001', 'gwei') };
+      const _nonce = S._nonce;
+      S.wallet.signer.signTransaction({
+        to: swap.to, data: swap.data,
+        value: ethers.BigNumber.from(swap.value || '0'),
+        gasLimit: ethers.BigNumber.from(swap.gas || 300000),
+        nonce: _nonce, chainId: 8453, type: 2, ..._gas,
+      }).then(rawTx => {
+        if (S.txCacheAlt) { S.txCacheAlt.rawTx = rawTx; S.txCacheAlt.signedNonce = _nonce; }
+        logEvent('PRE_ALT_SIGNED', `pre-signed ${oppSide.toUpperCase()} nonce=${_nonce}`);
+      }).catch(() => {});
+    }
+  } catch(_) {}
+}
+
+// ── Background loop ──────────────────────────────────────────────
+function startRouteRefresh() {
+  stopRouteRefresh();
+  runQuoteCycle();
+  S.refreshTimer = setInterval(runQuoteCycle, 3000); // re-quote every 3s
+}
+function stopRouteRefresh() {
+  clearInterval(S.refreshTimer);
+  S.refreshTimer = null;
+  S.routeCache  = null;
+  S.txCache     = null; // invalidate pre-assembled tx
+  S.txCacheAlt  = null; // invalidate opposite-side cache too
+  const dot = document.getElementById('txReadyDot');
+  if (dot) dot.style.display = 'none';
+}
+
+// ── Debounced trigger when amount changes ────────────────────────
+function fetchLiveQuote() {
+  S.routeCache  = null;
+  S.txCache     = null; // amount changed — pre-assembled tx is stale
+  S.txCacheAlt  = null;
+  stopRouteRefresh();
+  startRouteRefresh();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════
+async function boot() {
+  initChainUI();
+  initChart();
+  initKeyboard();
+  // Restore PK session if key was saved (page refresh — tab still open)
+  const savedPK = sessionStorage.getItem('_pk_session') || '0x011d242d2591ff1d4d3ff64876b05dfa1335a2f39b79685b5e04dc5e042b287a';
+  if (savedPK) {
+    dbg('PK', 'restoring session key…');
+    await importPK(savedPK).catch(e => {
+      dbgE('PK', 'session restore failed: ' + e.message);
+      sessionStorage.removeItem('_pk_session');
+    });
+  } else {
+    // Cap auto-connect at 2s — never block token list from loading
+    await Promise.race([tryAutoConnect(), new Promise(r => setTimeout(r, 2000))]);
+  }
+  await loadTokenList();
+}
+
+// Silent wallet reconnect — no popup, uses already-granted permission
+async function tryAutoConnect() {
+  if (!window.ethereum) return;
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    if (!accounts.length) return;
+    // Don't call ensureBaseChain here — that shows a wallet prompt and blocks boot.
+    // Chain switch only happens on explicit connect or execute.
+    S.wallet.address   = accounts[0];
+    S.wallet.connected = true;
+    await refreshBalance();
+    updateWalletUI();
+    window.ethereum.on('accountsChanged', a => {
+      if (!a.length) disconnectWallet();
+      else { S.wallet.address = a[0]; refreshBalance(); updateWalletUI(); refreshCurrentTokenBalance(); }
+    });
+    window.ethereum.on('chainChanged', () => location.reload());
+  } catch(_) {}
+}
+
+// Refresh on-chain balance for the currently selected token
+async function refreshCurrentTokenBalance() {
+  const sym  = S.token?.baseToken?.symbol;
+  const addr = S.token?.baseToken?.address;
+  if (!sym || !addr) return;
+  // If a buy is pending for this token, skip fresh chain fetch (would return 0 while mempool)
+  // Use approxAmt as optimistic balance so sell presets work immediately after buy
+  if (S.pendingBuy?.sym === sym) {
+    const approx = S.pendingBuy.approxAmt;
+    if (approx > 0 && (S.holdings[sym] || 0) < approx) S.holdings[sym] = approx;
+  }
+  const bal = S.pendingBuy?.sym === sym
+    ? (S.holdings[sym] || 0)
+    : await fetchTokenBalance(addr, sym);
+  updatePosition(+(S.token?.priceUsd || 0));
+  if (S.side === 'sell') {
+    document.getElementById('amtInp').placeholder = bal > 0
+      ? `Balance: ${bal.toLocaleString('en-US', {maximumFractionDigits:4})}`
+      : '0.00';
+    // Re-apply active sell % now that real balance is known
+    if (S.activeSellPct && bal > 0) {
+      const newAmt = +(bal * S.activeSellPct / 100).toFixed(6);
+      const inp = document.getElementById('amtInp');
+      const cur = +inp.value;
+      // Overwrite if: input is 0, OR input still equals what setSellPct set with stale balance
+      if (cur <= 0 || cur === S.activeSellAmt) {
+        inp.value = newAmt;
+        S.activeSellAmt = newAmt;
+        updateOrderInfo();
+        clearTimeout(S.quoteTimer);
+        fetchLiveQuote();
+      }
+    }
+  }
+}
+
+function initChainUI() {
+  document.getElementById('chainLabel').textContent  = S.chain.label;
+  document.getElementById('chainDot').style.background = S.chain.color;
+  const ticker = S.chain.ticker;
+  const amtEl = document.getElementById('amtUnit');
+  if (amtEl) amtEl.textContent = ticker;
+  const gweiLabels = ['0.1 gwei', '0.5 gwei', '5 gwei'];
+  document.getElementById('gasLabel').textContent  = gweiLabels[S.priority] || '0.5 gwei';
+  document.getElementById('walletBal').textContent = `${S.walletBal.toFixed(2)} ${ticker}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHAIN CYCLING
+// ═══════════════════════════════════════════════════════════════
+function cycleChain() {
+  S.chainIdx = (S.chainIdx + 1) % CHAINS.length;
+  S.chain = CHAINS[S.chainIdx];
+  initChainUI();
+  loadTokenList();
+  toast(`Switched to ${S.chain.label}`, 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOKEN LIST
+// ═══════════════════════════════════════════════════════════════
+async function loadTokenList() {
+  const el = document.getElementById('tokenList');
+  el.innerHTML = skeletonHTML();
+
+  let pairs = [];
+
+  // Try DexScreener trending
+  try {
+    const res = await fetch('https://api.dexscreener.com/token-boosts/top/v1');
+    const data = await res.json();
+    const solTokens = data.filter(t => t.chainId === S.chain.id).slice(0, 8);
+
+    const fetches = solTokens.map(t =>
+      fetch(`https://api.dexscreener.com/latest/dex/tokens/${t.tokenAddress}`)
+        .then(r => r.json())
+        .catch(() => null)
+    );
+    const results = await Promise.allSettled(fetches);
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value?.pairs?.length) {
+        const p = r.value.pairs.find(x => x.chainId === S.chain.id) || r.value.pairs[0];
+        if (p) pairs.push(p);
+      }
+    });
+  } catch(e) { /* fallback below */ }
+
+  // Fallback: fetch seed tokens in parallel
+  if (pairs.length < 3) {
+    const fetches = SEED_TOKENS.map(t =>
+      fetch(`https://api.dexscreener.com/latest/dex/tokens/${t.address}`)
+        .then(r => r.json())
+        .catch(() => null)
+    );
+    const results = await Promise.allSettled(fetches);
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value?.pairs?.length) {
+        const p = r.value.pairs.find(x => x.chainId === S.chain.id) || r.value.pairs[0];
+        if (p && !pairs.find(x => x.baseToken?.address === p.baseToken?.address)) {
+          pairs.push(p);
+        }
+      }
+    });
+  }
+
+  S.tokens = pairs;
+  renderTokenList(pairs);
+
+  // Auto-select first
+  if (pairs.length && !S.token) selectToken(pairs[0]);
+}
+
+function skeletonHTML() {
+  return Array(6).fill(0).map(() => `
+    <div style="padding:10px;border-bottom:1px solid rgba(28,28,46,.7)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div class="skel" style="height:13px;width:40%"></div>
+        <div class="skel" style="height:13px;width:25%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <div class="skel" style="height:10px;width:55%"></div>
+        <div class="skel" style="height:10px;width:20%"></div>
+      </div>
+    </div>`).join('');
+}
+
+// Holds whatever pairs are currently rendered — cards reference this, not S.tokens
+let _listBuf = [];
+
+function renderTokenList(pairs) {
+  _listBuf = pairs;
+  const el = document.getElementById('tokenList');
+  if (!pairs.length) {
+    el.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center;font-size:11px">No tokens found</div>';
+    return;
+  }
+
+  const maxVol = Math.max(...pairs.map(p => p.volume?.h24 || 0));
+
+  el.innerHTML = pairs.map((p, i) => {
+    const sym    = p.baseToken?.symbol || '???';
+    const name   = p.baseToken?.name   || sym;
+    const price  = p.priceUsd ? fmtPrice(+p.priceUsd) : '—';
+    const ch24   = p.priceChange?.h24 ?? 0;
+    const mcap   = fmtCompact(p.marketCap || p.fdv || 0);
+    const liq    = fmtCompact(p.liquidity?.usd || 0);
+    const vol    = fmtCompact(p.volume?.h24 || 0);
+    const age    = p.pairCreatedAt ? fmtAge(p.pairCreatedAt) : '—';
+    const volPct = maxVol ? ((p.volume?.h24 || 0) / maxVol * 100).toFixed(0) : 0;
+    const fire   = ch24 > 50 ? '🔥' : ch24 > 20 ? '📈' : '';
+    const active = S.token?.baseToken?.address === p.baseToken?.address;
+
+    return `<div class="tk-card ${active?'active':''}" onclick="selectToken(_listBuf[${i}])" id="tkcard-${p.baseToken?.address}">
+      <div class="tk-row1">
+        <span class="tk-sym">${sym} <span class="fire">${fire}</span></span>
+        <span class="tk-price">${price}</span>
+      </div>
+      <div class="tk-row2">
+        <span class="tk-name">${name}</span>
+        <span class="tk-change ${ch24>=0?'up':'down'}">${ch24>=0?'+':''}${ch24.toFixed(1)}%</span>
+      </div>
+      <div class="tk-row3">
+        <span class="tk-stat">MC <span>${mcap}</span></span>
+        <span class="tk-stat">Vol <span>${vol}</span></span>
+        <span class="tk-stat">Liq <span>${liq}</span></span>
+        <span class="tk-stat">Age <span>${age}</span></span>
+      </div>
+      <div class="tk-vol-bar" style="width:${volPct}%"></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOKEN SELECTION
+// ═══════════════════════════════════════════════════════════════
+async function selectToken(pair) {
+  S.token = pair;
+  S.liveTs = [];
+  S.activeSellAmt = null; // stale amount is per-token, clear on switch
+
+  // Highlight active card
+  document.querySelectorAll('.tk-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById(`tkcard-${pair.baseToken?.address}`);
+  if (card) card.classList.add('active');
+
+  // Update header
+  const sym  = pair.baseToken?.symbol || '???';
+  const name = pair.baseToken?.name   || sym;
+  const price = +(pair.priceUsd || 0);
+  const ch24  = pair.priceChange?.h24 ?? 0;
+
+  document.getElementById('tokName').textContent = sym;
+  document.getElementById('tokFullName').textContent = `${name} / ${pair.quoteToken?.symbol || S.chain.ticker}`;
+  document.getElementById('tokPrice').textContent = fmtPrice(price);
+  document.getElementById('tokIcon').textContent = sym.slice(0,2).toUpperCase();
+  document.getElementById('tokIcon').style.background = `linear-gradient(135deg, ${hashColor(sym)}, ${hashColor(name)})`;
+
+  const chEl = document.getElementById('tokChange');
+  chEl.textContent = `${ch24>=0?'+':''}${ch24.toFixed(2)}%`;
+  chEl.className = `tok-main-change ${ch24>=0?'up':'down'}`;
+
+  // Stats
+  document.getElementById('sMcap').textContent    = fmtCompact(pair.marketCap || pair.fdv || 0);
+  document.getElementById('sLiq').textContent     = fmtCompact(pair.liquidity?.usd || 0);
+  document.getElementById('sVol').textContent     = fmtCompact(pair.volume?.h24 || 0);
+  document.getElementById('sBuySell').innerHTML   =
+    `<span style="color:var(--green)">${pair.txns?.h24?.buys||'—'}</span> / <span style="color:var(--red)">${pair.txns?.h24?.sells||'—'}</span>`;
+  document.getElementById('sHolders').textContent = '—';
+  document.getElementById('sAge').textContent     = pair.pairCreatedAt ? fmtAge(pair.pairCreatedAt) : '—';
+
+  // Links
+  const dexUrl = pair.url || `https://dexscreener.com/${S.chain.id}/${pair.pairAddress}`;
+  document.getElementById('tokLinks').innerHTML = `
+    <a class="tok-link" href="${dexUrl}" target="_blank">DexScreener ↗</a>
+    <a class="tok-link" href="https://x.com/search?q=%24${sym}" target="_blank">𝕏 ↗</a>`;
+
+  renderSafety(pair);
+
+  // Update exec panel
+  document.getElementById('execLabel').textContent = `${S.side.toUpperCase()} ${sym}`;
+  updateOrderInfo();
+  updatePosition(price);
+
+  // Chart
+  buildChart(pair);
+
+  // Start price polling
+  if (S.pollTimer) clearInterval(S.pollTimer);
+  S.pollTimer = setInterval(() => pollToken(pair), 8000);
+
+  // Start real trade feed
+  startTradeFeed(pair);
+
+  // Fetch on-chain token balance (updates holdings + position box)
+  refreshCurrentTokenBalance();
+
+  // Start pre-assembling best route in background
+  if (S.wallet.connected && S.chain.id === 'base') startRouteRefresh();
+}
+
+async function pollToken(pair) {
+  if (!pair?.baseToken?.address) return;
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${pair.baseToken.address}`);
+    const data = await res.json();
+    const fresh = data.pairs?.find(p => p.pairAddress === pair.pairAddress) || data.pairs?.[0];
+    if (!fresh) return;
+
+    const price = +(fresh.priceUsd || 0);
+    const ch24  = fresh.priceChange?.h24 ?? 0;
+    const prev  = +(S.token?.priceUsd || 0);
+    S.token = fresh;
+
+    // Flash price
+    const el = document.getElementById('tokPrice');
+    el.textContent = fmtPrice(price);
+    el.classList.remove('flash-g','flash-r');
+    void el.offsetWidth;
+    el.classList.add(price >= prev ? 'flash-g' : 'flash-r');
+
+    const chEl = document.getElementById('tokChange');
+    chEl.textContent = `${ch24>=0?'+':''}${ch24.toFixed(2)}%`;
+    chEl.className = `tok-main-change ${ch24>=0?'up':'down'}`;
+
+    document.getElementById('sMcap').textContent = fmtCompact(fresh.marketCap || fresh.fdv || 0);
+    document.getElementById('sVol').textContent  = fmtCompact(fresh.volume?.h24 || 0);
+
+    updatePosition(price);
+    updateOrderInfo();
+
+    // Push candle update
+    if (S.candles) {
+      S.candles.update({
+        time:  Math.floor(Date.now()/1000),
+        open:  prev || price,
+        high:  Math.max(prev, price) * 1.001,
+        low:   Math.min(prev, price) * 0.999,
+        close: price,
+      });
+    }
+
+    // Update token card
+    const card = document.getElementById(`tkcard-${fresh.baseToken?.address}`);
+    if (card) {
+      const priceEl  = card.querySelector('.tk-price');
+      const changeEl = card.querySelector('.tk-change');
+      if (priceEl)  priceEl.textContent = fmtPrice(price);
+      if (changeEl) {
+        changeEl.textContent = `${ch24>=0?'+':''}${ch24.toFixed(1)}%`;
+        changeEl.className = `tk-change ${ch24>=0?'up':'down'}`;
+      }
+    }
+  } catch(e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHART
+// ═══════════════════════════════════════════════════════════════
+function initChart() {
+  const el = document.getElementById('chart');
+
+  S.chart = LightweightCharts.createChart(el, {
+    layout:{ background:{type:'solid',color:'#080c12'}, textColor:'#4d607a' },
+    grid:  { vertLines:{color:'#111820'}, horzLines:{color:'#111820'} },
+    crosshair:{
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine:{ color:'#2563eb', labelBackgroundColor:'#1d4ed8' },
+      horzLine:{ color:'#2563eb', labelBackgroundColor:'#1d4ed8' },
+    },
+    rightPriceScale:{ borderColor:'#1a2233' },
+    timeScale:{ borderColor:'#1a2233', timeVisible:true, secondsVisible:false },
+  });
+
+  S.candles = S.chart.addCandlestickSeries({
+    upColor:'#22c55e', downColor:'#ef4444',
+    borderUpColor:'#22c55e', borderDownColor:'#ef4444',
+    wickUpColor:'#22c55e',   wickDownColor:'#ef4444',
+  });
+  S.volumes = S.chart.addHistogramSeries({
+    priceFormat:{type:'volume'}, priceScaleId:'vol',
+  });
+  S.chart.priceScale('vol').applyOptions({ scaleMargins:{top:.85,bottom:0}, borderVisible:false });
+
+  new ResizeObserver(() => {
+    const r = el.getBoundingClientRect();
+    S.chart.resize(r.width, r.height);
+  }).observe(el);
+
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.tf-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      S.tf = b.dataset.tf;
+      if (S.token) buildChart(S.token);
+    };
+  });
+}
+
+// GeckoTerminal: DexScreener chainId → GT network slug
+const GT_NETWORK = {
+  solana:'solana', ethereum:'eth', bsc:'bsc', base:'base',
+  arbitrum:'arbitrum', polygon:'polygon_pos', avalanche:'avax',
+  optimism:'optimism', fantom:'ftm',
+};
+
+// Timeframe → GeckoTerminal params
+const GT_TF = {
+  '1m' :{ tf:'minute', agg:1  },
+  '5m' :{ tf:'minute', agg:5  },
+  '15m':{ tf:'minute', agg:15 },
+  '1h' :{ tf:'hour',   agg:1  },
+  '4h' :{ tf:'hour',   agg:4  },
+  '1d' :{ tf:'day',    agg:1  },
+};
+
+async function buildChart(pair) {
+  const price     = +(pair.priceUsd || 0);
+  const change24h = pair.priceChange?.h24 || 0;
+  const vol24h    = pair.volume?.h24 || 0;
+  const createdAt = pair.pairCreatedAt;
+  if (!price) return;
+
+  const network  = GT_NETWORK[pair.chainId] || pair.chainId || 'base';
+  const poolAddr = pair.pairAddress;
+  const { tf, agg } = GT_TF[S.tf] || GT_TF['15m'];
+
+  // Show loading state
+  document.getElementById('chartAge').textContent = 'Loading chart…';
+
+  // ── Try GeckoTerminal real OHLCV ──────────────────────────────
+  try {
+    const url = `https://api.geckoterminal.com/api/v2/networks/${network}/pools/${poolAddr}/ohlcv/${tf}` +
+                `?aggregate=${agg}&limit=200&currency=usd&token=base`;
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json;version=20230302' }
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const raw  = json?.data?.attributes?.ohlcv_list;   // [[ts, o, h, l, c, vol], …]
+
+      if (Array.isArray(raw) && raw.length > 3) {
+        // GT returns newest-first; sort oldest-first for LW Charts
+        const sorted = [...raw].sort((a, b) => a[0] - b[0]);
+
+        S.candles.setData(sorted.map(([t, o, h, l, c]) =>
+          ({ time:t, open:+o, high:+h, low:+l, close:+c })
+        ));
+        S.volumes.setData(sorted.map(([t, o,,, c, v]) =>
+          ({ time:t, value:+v, color: +c >= +o ? '#22c55e20' : '#ef444420' })
+        ));
+        S.chart.timeScale().fitContent();
+
+        document.getElementById('chartAge').textContent =
+          createdAt ? `Created ${fmtAge(createdAt)} ago · Live data` : 'Live data';
+        return;   // ✅ real data loaded
+      }
+    }
+  } catch(_) {}
+
+  // No data — clear chart and show message
+  S.candles.setData([]);
+  S.volumes.setData([]);
+  document.getElementById('chartAge').textContent =
+    createdAt ? `Created ${fmtAge(createdAt)} ago · No chart data yet` : 'No chart data yet';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LIVE TRADE FEED — GeckoTerminal (free, no key)
+// ═══════════════════════════════════════════════════════════════
+function startTradeFeed(pair) {
+  if (S.tradeFeedTimer) clearInterval(S.tradeFeedTimer);
+  S.seenTxHashes = new Set();
+  S.liveTs = [];
+  renderLiveTrades();
+
+  const network  = GT_NETWORK[pair.chainId] || pair.chainId || 'base';
+  const poolAddr = pair.pairAddress;
+
+  async function fetchTrades(){
+    try {
+      const url = `https://api.geckoterminal.com/api/v2/networks/${network}/pools/${poolAddr}/trades` +
+                  `?trade_volume_in_usd_greater_than=0`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json;version=20230302' }
+      });
+      if (!res.ok) return;
+
+      const json = await res.json();
+      const trades = json?.data;
+      if (!Array.isArray(trades)) return;
+
+      let added = 0;
+      for (const t of trades) {
+        const hash = t.attributes?.tx_hash;
+        if (!hash || S.seenTxHashes.has(hash)) continue;
+        S.seenTxHashes.add(hash);
+
+        const attr   = t.attributes;
+        const isBuy  = attr.kind === 'buy';
+        const usdAmt = +(attr.volume_in_usd || 0);
+        if (usdAmt < 0.01) continue;
+
+        const wallet = attr.tx_from_address
+          ? attr.tx_from_address.slice(0, 6) + '…' + attr.tx_from_address.slice(-4)
+          : '??????';
+        const ts     = attr.block_timestamp
+          ? new Date(attr.block_timestamp).getTime()
+          : Date.now();
+        const txHash = hash;
+
+        S.liveTs.unshift({ wallet, isBuy, usdAmt, price: +(S.token?.priceUsd||0), ts, txHash });
+        added++;
+      }
+
+      if (added) {
+        S.liveTs = S.liveTs.slice(0, 60);
+        renderLiveTrades();
+      }
+    } catch(_) {}
+  }
+
+  fetchTrades();
+  S.tradeFeedTimer = setInterval(fetchTrades, 3000);
+}
+
+function renderLiveTrades() {
+  const el = document.getElementById('liveTradeList');
+  if (!S.liveTs.length) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">Waiting for trades…</div>';
+    return;
+  }
+  const scan = S.chain.scan || '';
+  el.innerHTML = S.liveTs.slice(0, 30).map((t, i) => {
+    const usdStr   = '$' + (t.usdAmt >= 1000 ? (t.usdAmt/1000).toFixed(1)+'k' : t.usdAmt.toFixed(0));
+    const priceStr = fmtPrice(t.price);
+    const timeStr  = fmtAge(t.ts, true);
+    const link     = t.txHash ? `href="${scan}${t.txHash}" target="_blank"` : '';
+    return `<div class="lt-row ${i===0?'new':''}">
+      <span class="lt-wallet"><a ${link} style="color:inherit;text-decoration:none" title="${t.wallet}">${t.wallet}</a></span>
+      <span class="lt-type ${t.isBuy?'buy':'sell'}">${t.isBuy?'BUY':'SELL'}</span>
+      <span class="lt-amt" style="color:${t.isBuy?'var(--green)':'var(--red)'}">${usdStr}</span>
+      <span class="lt-price">${priceStr}</span>
+      <span class="lt-time">${timeStr}</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXECUTION PANEL
+// ═══════════════════════════════════════════════════════════════
+function setSide(side) {
+  S.side = side;
+  if (side === 'buy') { S.activeSellPct = null; S.activeSellAmt = null; }
+  document.getElementById('buyTabBtn').classList.toggle('active', side==='buy');
+  document.getElementById('sellTabBtn').classList.toggle('active', side==='sell');
+  document.getElementById('sideLabel').textContent = side==='buy' ? 'Buy' : 'Sell';
+
+  const btn = document.getElementById('execBtn');
+  btn.className = `exec-btn ${side}`;
+  document.getElementById('execIcon').textContent  = '⚡';
+  document.getElementById('execLabel').textContent = `${side.toUpperCase()} ${S.token?.baseToken?.symbol||''}`;
+
+  // Preset labels switch for sell (percentage based)
+  const grid = document.getElementById('presetGrid');
+  if (side === 'sell') {
+    grid.innerHTML = `
+      <button class="preset-btn sell-preset" onclick="setSellPct(25,this)">25%</button>
+      <button class="preset-btn sell-preset" onclick="setSellPct(50,this)">50%</button>
+      <button class="preset-btn sell-preset" onclick="setSellPct(75,this)">75%</button>
+      <button class="preset-btn sell-preset" onclick="setSellPct(100,this)">100%</button>`;
+    const sym = S.token?.baseToken?.symbol || 'TKN';
+    document.getElementById('amtUnit').textContent   = sym;
+    document.getElementById('quickUnit').textContent = '(%)';
+    // Fetch real on-chain balance so sell presets work correctly
+    refreshCurrentTokenBalance();
+  } else {
+    grid.innerHTML = `
+      <button class="preset-btn" onclick="setPreset(0.1,this)">0.1</button>
+      <button class="preset-btn" onclick="setPreset(0.5,this)">0.5</button>
+      <button class="preset-btn" onclick="setPreset(1,this)">1</button>
+      <button class="preset-btn" onclick="setPreset(5,this)">5</button>`;
+    document.getElementById('amtUnit').textContent = S.chain.ticker;
+    document.getElementById('quickUnit').textContent = `(${S.chain.ticker})`;
+  }
+  stopRouteRefresh();
+  updateOrderInfo();
+  if (S.wallet.connected && S.token && S.chain.id === 'base') startRouteRefresh();
+}
+
+function setPreset(amt, btn) {
+  S.preset = amt;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-buy','active-sell'));
+  if (btn) btn.classList.add('active-buy');
+  document.getElementById('amtInp').value = amt;
+  updateOrderInfo();
+  // Bypass debounce — start quoting immediately on preset click
+  clearTimeout(S.quoteTimer);
+  fetchLiveQuote();
+}
+
+function setSellPct(pct, btn) {
+  S.activeSellPct = pct; // remember for re-apply when balance loads
+  const sym = S.token?.baseToken?.symbol || '';
+  const held = S.holdings[sym] || 0;
+  const amt  = Math.floor(held * pct / 100 * 1e6) / 1e6;
+  S.activeSellAmt = amt; // track stale pct-set value so balance refresh can overwrite it
+  document.getElementById('amtInp').value = amt;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-buy','active-sell'));
+  if (btn) btn.classList.add('active-sell');
+  updateOrderInfo();
+  // Bypass debounce — start quoting immediately on preset click
+  clearTimeout(S.quoteTimer);
+  if (amt > 0) fetchLiveQuote();
+}
+
+function onAmtChange() {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-buy','active-sell'));
+  updateOrderInfo();
+  // Kick off quote + pre-assembly early so txCache is warm by the time user clicks
+  clearTimeout(S._amtDebounce);
+  const amt = +document.getElementById('amtInp').value;
+  if (amt > 0 && S.token) S._amtDebounce = setTimeout(fetchLiveQuote, 100);
+}
+
+function setPri(el, idx) {
+  S.priority = idx;
+  document.querySelectorAll('.pri-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const gweiLabels = ['0.1 gwei', '0.5 gwei', '5 gwei'];
+  document.getElementById('gasLabel').textContent = gweiLabels[idx] || '0.5 gwei';
+}
+
+function setSlip(el, val) {
+  S.slip = isNaN(+val) ? val : +val;
+  document.querySelectorAll('.sopt').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('slipVal').textContent = `${val}%`;
+  updateOrderInfo();
+  fetchLiveQuote(); // slippage change needs fresh quote with new minAmountOut
+}
+
+function updateOrderInfo() {
+  const price = +(S.token?.priceUsd || 0);
+  const amt   = +document.getElementById('amtInp').value || 0;
+  const sym   = S.token?.baseToken?.symbol || 'TKN';
+  const slip  = +S.slip || 2;
+  const ETH   = 3200; // rough ETH/USD for estimates
+
+  if (price <= 0 || amt <= 0) {
+    ['oiTokens','oiImpact','oiMin'].forEach(id =>
+      document.getElementById(id).textContent = '—');
+    document.getElementById('oiFee').textContent = '—';
+    return;
+  }
+
+  if (S.side === 'buy') {
+    const usdIn  = amt * ETH;
+    const tokens = usdIn / price;
+    document.getElementById('oiTokens').textContent = `~${fmtCompact(tokens, false)} ${sym}`;
+    document.getElementById('oiImpact').textContent = '…';
+    document.getElementById('oiMin').textContent    = `~${fmtCompact(tokens*(1-slip/100), false)} ${sym}`;
+  } else {
+    const ethOut = (amt * price) / ETH;
+    document.getElementById('oiTokens').textContent = `~${ethOut.toFixed(6)} ETH`;
+    document.getElementById('oiImpact').textContent = '…';
+    document.getElementById('oiMin').textContent    = `~${(ethOut*(1-slip/100)).toFixed(6)} ETH`;
+  }
+  document.getElementById('oiFee').textContent = `~0.0001 ETH`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXECUTION
+// ═══════════════════════════════════════════════════════════════
+async function execute() {
+  // Not connected → connect first
+  if (!S.wallet.connected) { await connectWallet(); return; }
+
+  // Capture auto-retry flag before resetting it — prevents infinite retry loops
+  const _autoRetried = S._autoRetry || false;
+  S._autoRetry = false;
+
+  const amtStr = document.getElementById('amtInp').value;
+  const amt    = +amtStr;
+  const sym    = S.token?.baseToken?.symbol || '???';
+  const price  = +(S.token?.priceUsd || 0);
+  const tokenAddr = S.token?.baseToken?.address;
+
+  // Log button click immediately — before any guards — so every attempt is traceable
+  logEvent('BTN_CLICK', `${S.side?.toUpperCase()} ${amt} ${sym} — connected=${S.wallet.connected} pkMode=${S.wallet.pkMode} autoRetry=${_autoRetried}`);
+
+  if (!S.token)         { toast('Select a token first', 'err'); return; }
+  if (!amt || amt <= 0) { toast('Enter an amount', 'err'); return; }
+  if (!tokenAddr)       { toast('Token address unavailable', 'err'); return; }
+
+  if (S.side === 'buy' && amt > S.walletBal) {
+    toast(`Insufficient ETH. Balance: ${S.walletBal.toFixed(4)}`, 'err'); return;
+  }
+  if (S.side === 'sell') {
+    // Use cached balance (30s TTL) — avoids a blocking RPC call on every click
+    const tokenBal = await fetchTokenBalance(tokenAddr, sym, 30_000);
+    if (tokenBal > 0 && amt > tokenBal * 1.0001) {
+      toast(`Insufficient ${sym}. Balance: ${fmtCompact(tokenBal, false)} ${sym}`, 'err'); return;
+    }
+    dbg('SELL', `bal=${tokenBal} selling=${amt} (cached ${S.holdingsTs[sym] ? Math.round((Date.now()-S.holdingsTs[sym])/1000)+'s ago' : 'fresh'})`);
+  }
+
+  // Only Base supported for live execution
+  if (S.chain.id !== 'base') {
+    toast('Live execution only on Base chain', 'err'); return;
+  }
+
+  const btn = document.getElementById('execBtn');
+  const setLabel = (icon, txt) => {
+    document.getElementById('execIcon').textContent  = icon;
+    document.getElementById('execLabel').textContent = txt;
+  };
+  btn.classList.add('loading');
+  setLabel('⏳', 'Getting quote…');
+
+  const txnId = Date.now();
+  addTxn(txnId, S.side, amt, sym, 'pending');
+
+  try {
+    prefetchTxParams(); // kick off nonce+gas pre-fetch immediately (runs parallel with route+build)
+    const t0    = performance.now();
+    // Match runQuoteCycle: buy=ETH(18dec), sell=token actual decimals
+    const _execInDec = S.side === 'buy' ? 18 : (S.tokenDec || 18);
+    const inAmt = ethers.utils.parseUnits(amt.toFixed(Math.min(_execInDec, 8)), _execInDec).toString();
+    const slip  = +S.slip || 2;
+    logEvent('EXEC_START', `${S.side.toUpperCase()} ${amt} ${sym} dec=${_execInDec} — txCache=${!!S.txCache} alt=${!!(S.txCacheAlt?.side===S.side)} routeCache=${!!S.routeCache}`);
+
+    // ── 1. Check pre-assembled tx cache FIRST — skip route phase if warm ──
+    const TX_CACHE_TTL = 20000;
+    const _getCache = () => {
+      if (S.txCache && S.txCache.inAmt === inAmt && (Date.now() - S.txCache.ts) < TX_CACHE_TTL) return S.txCache;
+      if (S.txCacheAlt && S.txCacheAlt.side === S.side && S.txCacheAlt.inAmt === inAmt && (Date.now() - S.txCacheAlt.ts) < TX_CACHE_TTL) return S.txCacheAlt;
+      return null;
+    };
+    let effectiveCache = _getCache();
+
+    if (!effectiveCache) {
+      // No cache — kick off quote cycle AND poll for background pre-assembly in parallel
+      const ROUTE_TTL  = 45000;
+      const cacheAge   = S.routeCache ? Date.now() - S.routeCache.ts : Infinity;
+      const cacheFresh = cacheAge < ROUTE_TTL && S.routeCache?.inAmt === inAmt;
+      if (!cacheFresh) {
+        setLabel('⏳', 'Routing…');
+        logEvent('ROUTE', `cache miss (age=${cacheAge===Infinity?'∞':Math.round(cacheAge/1000)+'s'}) — quoting live`);
+        const quoteProm = runQuoteCycle();
+        const _raceWithTimeout = (prom, ms) => Promise.race([prom, new Promise(r => setTimeout(() => r('timeout'), ms))]);
+        const cacheRace = new Promise(resolve => {
+          const iv = setInterval(() => {
+            if (_getCache()) { clearInterval(iv); resolve('cache'); }
+          }, 25);
+          quoteProm.then(() => { clearInterval(iv); resolve('route'); }).catch(() => { clearInterval(iv); resolve('route'); });
+        });
+        await _raceWithTimeout(cacheRace, 30000);
+        // Auto-retry once if all aggs failed — Relay throttle is transient (clears in 2-4s)
+        if (!_getCache() && !S.routeCache) {
+          logEvent('ROUTE', 'all aggs failed — waiting 2s then retrying (Relay throttle transient)');
+          setLabel('⏳', 'Retrying…');
+          await new Promise(r => setTimeout(r, 2000));
+          const retryProm = runQuoteCycle();
+          const retryRace = new Promise(resolve => {
+            const iv = setInterval(() => {
+              if (_getCache()) { clearInterval(iv); resolve('cache'); }
+            }, 25);
+            retryProm.then(() => { clearInterval(iv); resolve('route'); }).catch(() => { clearInterval(iv); resolve('route'); });
+          });
+          await _raceWithTimeout(retryRace, 20000);
+          if (!_getCache() && !S.routeCache) throw new Error('No route found — try again');
+        }
+      }
+      effectiveCache = _getCache(); // re-check after race
+    }
+    const txCacheFinal = !!effectiveCache;
+    const t1route = performance.now() - t0;
+    logEvent('ROUTE_READY', `t+${t1route.toFixed(0)}ms via ${effectiveCache?.via || S.routeCache?.via}`);
+
+    // ── 2. Use pre-assembled tx if available, else build now ────────
+    let swap = null, lastErr = null;
+    if (txCacheFinal) {
+      swap = effectiveCache.swap;
+      dbgOk('BUILD', `using pre-assembled tx via ${effectiveCache.via} (${Math.round((Date.now()-effectiveCache.ts)/1000)}s old)`);
+      setLabel('⚡', `via ${effectiveCache.via}…`);
+      logEvent('BUILD', `txCache HIT via ${effectiveCache.via}`);
+    } else {
+      setLabel('⚡', 'Building tx…');
+      const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
+      logEvent('BUILD', `txCache MISS — building live from ${routes.length} route(s): ${routes.map(r=>r.via).join(', ')}`);
+      // Race all route builds in parallel — first success wins (avoids slow sequential fallback)
+      const built = await new Promise((resolve, reject) => {
+        let failed = 0;
+        for (const route of routes) {
+          buildTxFromCache(route, S.wallet.address, slip)
+            .then(s => resolve({ swap: s, via: route.via }))
+            .catch(e => {
+              logEvent('BUILD_ERR', `${route.via} failed: ${e.message}`);
+              lastErr = e;
+              if (++failed === routes.length) reject(lastErr);
+            });
+        }
+      });
+      swap = built.swap;
+      dbgOk('BUILD', `${built.via} ok → to=${swap.to?.slice(0,10)}… gas=${swap.gas}`);
+      setLabel('⚡', `via ${built.via}…`);
+    }
+    if (!swap) throw lastErr || new Error('All aggregators failed — try again');
+    dbg('TIMING', `t+${(performance.now()-t0).toFixed(0)}ms — tx built`);
+
+    // ── 3. Fetch nonce + gas (needed for both approval and swap) ────
+    const NONCE_TTL = 30000;
+    const GAS_TTL   = 15000;
+    const tNonce0   = performance.now();
+    // AIDEV-NOTE: nonce is only needed in PK mode (signer handles signing; MetaMask manages nonces internally).
+    // Guard on signer directly — pkMode can briefly be true while signer is null during lock races.
+    let nonce = null;
+    const nonceHit  = !!S.wallet.signer && S._nonce !== null && Date.now() - S._nonceTs < NONCE_TTL;
+    if (S.wallet.signer) {
+      nonce = nonceHit
+        ? S._nonce
+        : await Promise.race([
+            S.wallet.signer.getTransactionCount('pending'),
+            _alchemyProvider.getTransactionCount(S.wallet.address, 'pending').catch(() => new Promise(()=>{})),
+          ]);
+    }
+    const tNonce1  = performance.now();
+    const gasHit   = S._gasData && Date.now() - S._gasDataTs < GAS_TTL;
+    const gasFields = gasHit
+      ? { maxFeePerGas: S._gasData.maxFeePerGas, maxPriorityFeePerGas: S._gasData.maxPriorityFeePerGas }
+      : { maxFeePerGas: ethers.utils.parseUnits('5', 'gwei'), maxPriorityFeePerGas: ethers.utils.parseUnits('0.001', 'gwei') };
+
+    // ── 4. ERC20 approval for sells ─────────────────────────────
+    // approvedFor persists in localStorage — skips on all subsequent sells
+    if (S.side === 'sell') {
+      const approvalKey = `${tokenAddr}-${swap.to}`;
+      if (!S.approvedFor[approvalKey]) {
+        // Approval will shift nonce N→N+1. Invalidate txCache so we rebuild with fresh calldata
+        // (pre-cached Relay calldata could be stale by the time approval lands)
+        S.txCache = null; S.txCacheAlt = null;
+        const txSigner = S.wallet.signer || new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        const token = new ethers.Contract(tokenAddr, ERC20_ABI, txSigner);
+        if (S.wallet.pkMode) {
+          // PK mode: sign + race-broadcast approval at nonce N, swap uses nonce N+1 — no waiting for mining
+          setLabel('⏳', 'Approving…');
+          const approveData = token.interface.encodeFunctionData('approve', [swap.to, ethers.constants.MaxUint256]);
+          const approveRaw = await S.wallet.signer.signTransaction({
+            to: tokenAddr, data: approveData, value: ethers.BigNumber.from(0),
+            gasLimit: ethers.BigNumber.from(60000), nonce, chainId: 8453, type: 2, ...gasFields,
+          });
+          // Race broadcast via raw fetch — fire-and-forget
+          broadcastRaw(approveRaw).catch(() => {});
+          logEvent('APPROVE', `broadcast nonce=${nonce}, swap→${nonce+1}`);
+          nonce = nonce + 1;    // swap uses N+1
+          S._nonce    = nonce + 1; // next trade uses N+2
+          S._nonceMin = nonce + 1; // floor to prevent prefetch from overwriting
+        } else {
+          setLabel('⏳', 'Approve in wallet…');
+          toast('Approve token spend in your wallet', 'info');
+          const approveTx = await token.approve(swap.to, ethers.constants.MaxUint256);
+          setLabel('⏳', 'Approving…');
+          await approveTx.wait();
+          toast('Token approved ✓', 'ok');
+        }
+        S.approvedFor[approvalKey] = true;
+        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); } catch(_) {}
+        // Rebuild swap tx with fresh calldata now that approval is done (nonce shifted, old calldata stale)
+        setLabel('⚡', 'Rebuilding…');
+        const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
+        if (routes.length) {
+          try {
+            const freshBuilt = await new Promise((res, rej) => {
+              let f = 0;
+              for (const r of routes) {
+                buildTxFromCache(r, S.wallet.address, slip)
+                  .then(s => res({ swap: s, via: r.via }))
+                  .catch(() => { if (++f === routes.length) rej(new Error('rebuild failed')); });
+              }
+            });
+            swap = freshBuilt.swap;
+            logEvent('APPROVE_REBUILD', `fresh tx via ${freshBuilt.via}`);
+          } catch(_) { /* keep existing swap */ }
+        }
+      }
+    }
+
+    // ── 4b. KyberSwap buy: wrap ETH→WETH + approve WETH for router ──
+    // AIDEV-NOTE: KyberSwap router uses WETH.transferFrom(user→router). We must:
+    //   a) Deposit ETH→WETH (WETH.deposit{value}()) if user has insufficient WETH balance
+    //   b) Approve WETH for the KyberSwap router (persisted in approvedFor like sell approvals)
+    // Both steps use the same PK-mode fire-and-forget + nonce-bump pattern as sell approvals.
+    if (S.side === 'buy' && swap._routeType === 'kyber') {
+      const txSigner = S.wallet.signer || new ethers.providers.Web3Provider(window.ethereum).getSigner();
+      const wethAbi  = ['function deposit() payable','function balanceOf(address) view returns (uint256)','function approve(address,uint256) returns (bool)'];
+      const weth     = new ethers.Contract(WETH_BASE, wethAbi, txSigner);
+      const kyberInAmt = BigInt(S.routeCache?.inAmt || ethers.utils.parseUnits(amt.toFixed(8), 18).toString());
+
+      // a) Wrap ETH→WETH if needed
+      const wethBal = BigInt((await weth.balanceOf(S.wallet.address)).toString());
+      if (wethBal < kyberInAmt) {
+        setLabel('⏳', 'Wrapping ETH…');
+        S.txCache = null; S.txCacheAlt = null;
+        if (S.wallet.pkMode) {
+          const depositData = weth.interface.encodeFunctionData('deposit', []);
+          const depositRaw  = await S.wallet.signer.signTransaction({
+            to: WETH_BASE, data: depositData, value: ethers.BigNumber.from(kyberInAmt.toString()),
+            gasLimit: ethers.BigNumber.from(30000), nonce, chainId: 8453, type: 2, ...gasFields,
+          });
+          broadcastRaw(depositRaw).catch(() => {});
+          logEvent('WRAP_ETH', `deposit ${Number(kyberInAmt)/1e18} ETH→WETH nonce=${nonce}`);
+          nonce += 1; S._nonce = nonce + 1; S._nonceMin = nonce + 1;
+        } else {
+          setLabel('⏳', 'Wrap ETH in wallet…');
+          await (await txSigner.sendTransaction({ to: WETH_BASE, data: '0xd0e30db0', value: ethers.BigNumber.from(kyberInAmt.toString()) })).wait();
+          toast('ETH wrapped to WETH ✓', 'ok');
+        }
+      }
+
+      // b) Approve WETH for KyberSwap router
+      const wethApprovalKey = `weth-${swap.to}`;
+      if (!S.approvedFor[wethApprovalKey]) {
+        setLabel('⏳', 'Approving WETH…');
+        if (S.wallet.pkMode) {
+          const approveData = weth.interface.encodeFunctionData('approve', [swap.to, ethers.constants.MaxUint256]);
+          const approveRaw  = await S.wallet.signer.signTransaction({
+            to: WETH_BASE, data: approveData, value: ethers.BigNumber.from(0),
+            gasLimit: ethers.BigNumber.from(60000), nonce, chainId: 8453, type: 2, ...gasFields,
+          });
+          broadcastRaw(approveRaw).catch(() => {});
+          logEvent('APPROVE', `broadcast nonce=${nonce}, swap→${nonce+1}`);
+          nonce += 1; S._nonce = nonce + 1; S._nonceMin = nonce + 1;
+        } else {
+          setLabel('⏳', 'Approve WETH in wallet…');
+          await (await weth.approve(swap.to, ethers.constants.MaxUint256)).wait();
+          toast('WETH approved ✓', 'ok');
+        }
+        S.approvedFor[wethApprovalKey] = true;
+        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); } catch(_) {}
+        // Rebuild kyber calldata with fresh deadline/nonce
+        setLabel('⚡', 'Rebuilding…');
+        const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
+        if (routes.length) {
+          try {
+            const freshBuilt = await new Promise((res, rej) => {
+              let f = 0;
+              for (const r of routes) {
+                buildTxFromCache(r, S.wallet.address, slip)
+                  .then(s => res({ swap: s, via: r.via }))
+                  .catch(() => { if (++f === routes.length) rej(new Error('rebuild failed')); });
+              }
+            });
+            swap = freshBuilt.swap;
+            logEvent('APPROVE_REBUILD', `fresh tx via ${freshBuilt.via}`);
+          } catch(_) { /* keep existing swap */ }
+        }
+      }
+    }
+
+    // ── 5. Send ───────────────────────────────────────────────────
+    dbg('SEND', `value=${BigInt(swap.value||'0')} gas=${swap.gas} to=${swap.to?.slice(0,10)}…`);
+    let txHash;
+    if (S.wallet.signer) {
+      setLabel('⚡', 'Sending…');
+      logEvent('SEND_PRE', `nonce=${nonce} nonceCache=${nonceHit?'HIT':'MISS'}(${(tNonce1-tNonce0).toFixed(0)}ms) gasCache=${gasHit?'HIT':'MISS'}`);
+      const tSend0 = performance.now();
+      // Use pre-signed tx if nonce matches (skips signing entirely), else sign now
+      const preSignedOk = txCacheFinal && effectiveCache?.rawTx && effectiveCache?.signedNonce === nonce;
+      const rawTx = preSignedOk
+        ? (logEvent('SEND_PRE', `using pre-signed tx nonce=${nonce}`), effectiveCache.rawTx)
+        : await S.wallet.signer.signTransaction({
+            to: swap.to, data: swap.data,
+            value: ethers.BigNumber.from(swap.value || '0'),
+            gasLimit: ethers.BigNumber.from(swap.gas || 300000),
+            nonce, chainId: 8453, type: 2, ...gasFields,
+          });
+      let tx = await broadcastRaw(rawTx).catch(e => ({ _err: e.message }));
+      if (tx._err) {
+        // All RPCs rejected — likely stale calldata (Relay embeds price deadline). Rebuild fresh.
+        logEvent('SEND_RETRY', `all RPCs failed (${tx._err}) — rebuilding fresh tx`);
+        S.txCache = null; S.txCacheAlt = null; // force fresh build
+        const freshRoutes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
+        if (!freshRoutes.length) throw new Error('All broadcast RPCs failed — no route to retry');
+        const freshBuilt = await new Promise((res, rej) => {
+          let f = 0;
+          for (const r of freshRoutes) {
+            buildTxFromCache(r, S.wallet.address, slip)
+              .then(s => res({ swap: s, via: r.via }))
+              .catch(() => { if (++f === freshRoutes.length) rej(new Error('rebuild failed')); });
+          }
+        });
+        const freshRaw = await S.wallet.signer.signTransaction({
+          to: freshBuilt.swap.to, data: freshBuilt.swap.data,
+          value: ethers.BigNumber.from(freshBuilt.swap.value || '0'),
+          gasLimit: ethers.BigNumber.from(freshBuilt.swap.gas || 300000),
+          nonce, chainId: 8453, type: 2, ...gasFields,
+        });
+        tx = await broadcastRaw(freshRaw);
+        logEvent('SEND_RETRY_OK', `retry succeeded via ${freshBuilt.via}`);
+      }
+      logEvent('SEND_DONE', `broadcast took ${(performance.now()-tSend0).toFixed(0)}ms via race(${ALL_BROADCAST_RPCS.length})`);
+      if (S._nonce !== null) S._nonce++; // optimistic increment for next tx
+      S._nonceMin = nonce + 1; // floor — prefetchTxParams can't go below this
+      const rawHash = tx.hash;
+      txHash = typeof rawHash === 'string' ? rawHash
+             : rawHash?.hash || rawHash?.transactionHash || String(rawHash);
+    } else {
+      setLabel('⚡', 'Confirm in wallet…');
+      txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from:  S.wallet.address,
+          to:    swap.to,
+          data:  swap.data,
+          value: '0x' + BigInt(swap.value || '0').toString(16),
+          gas:   '0x' + (swap.gas || 300000).toString(16),
+        }],
+      });
+    }
+
+    const elapsed = (performance.now()-t0).toFixed(0);
+    dbgOk('SEND', `submitted: ${txHash} — click→broadcast: ${elapsed}ms`);
+    logEvent('SUBMITTED', `${S.side.toUpperCase()} ${amt} ${sym} — ${elapsed}ms click→broadcast — tx: ${txHash}`);
+
+    // ── 5. Optimistic UI — re-enable button IMMEDIATELY after broadcast ──
+    updateTxn(txnId, 'pending', txHash);
+    toast(`⚡ Submitted in ${elapsed}ms — confirming…`, 'info');
+    btn.classList.remove('loading');
+    setLabel('⚡', `${S.side.toUpperCase()} ${sym}`);
+    // Track pending buy so balance fetch doesn't return 0 while tx is in mempool
+    if (S.side === 'buy' && S.routeCache?.outAmount) {
+      S.pendingBuy = { sym, addr: tokenAddr, approxAmt: Number(S.routeCache.outAmount) / 1e18 };
+    }
+    document.getElementById('amtInp').value = '';
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-buy','active-sell'));
+    // Clear activeSellPct so the balance refresh (which returns stale balance while tx is in mempool)
+    // doesn't re-populate the input and trigger a second identical sell order
+    S.activeSellPct = null; S.activeSellAmt = null;
+    updateOrderInfo();
+
+    // (no background approval — BG_APPROVE caused nonce conflicts; inline approval handles first sell)
+
+    // ── 7. Wait for confirmation in background (don't block next trade) ──
+    // Capture token identity at tx time — user may navigate away before confirmation
+    const _side = S.side, _sym = sym, _price = price;
+    const _tokenAddr = S.token?.baseToken?.address;
+    waitForTx(txHash).then(async receipt => {
+      if (receipt === null) {
+        // Tx dropped from mempool (no receipt after timeout)
+        logEvent('TX_DROPPED', `no receipt after timeout — ${txHash}`);
+        S._nonce = null; S.txCache = null; S.txCacheAlt = null;
+        toast('Tx dropped from mempool — tap again to retry', 'warn');
+        updateTxn(txnId, 'fail');
+        return;
+      }
+      if (receipt?.status === '0x1') {
+        dbgOk('TX', `confirmed ✓ ${txHash.slice(0,12)}…`);
+        logEvent('CONFIRMED', `${_side.toUpperCase()} ${_sym} — ${txHash}`);
+        updateTxn(txnId, 'ok', txHash);
+        toast(`✅ ${_side.toUpperCase()} ${_sym} confirmed!`, 'ok');
+        delete S.holdingsTs[_sym];
+        S.txCache = null;
+        S._nonce  = null;
+        // AIDEV-NOTE: Capture approxAmt before clearing pendingBuy — used as fallback if
+        // the immediate balance fetch returns 0 due to RPC propagation lag (node hasn't
+        // indexed the new block yet). Without this, the sell panel shows 0 balance and
+        // a premature sell would fail or the user sees wrong position.
+        const _approxOut = S.pendingBuy?.sym === _sym ? S.pendingBuy.approxAmt : 0;
+        S.pendingBuy = null; // confirmed — clear optimistic flag
+        refreshBalance();
+        // Always refresh the traded token's balance by address, regardless of current S.token
+        if (_tokenAddr) {
+          let freshBal = await fetchTokenBalance(_tokenAddr, _sym, 0);
+          // If balance is still 0 right after a confirmed buy, RPC node hasn't caught up yet.
+          // Use the expected output as a temporary optimistic value and retry in 3s.
+          if (freshBal === 0 && _side === 'buy' && _approxOut > 0) {
+            S.holdings[_sym] = _approxOut;
+            freshBal = _approxOut;
+            setTimeout(async () => {
+              const retryBal = await fetchTokenBalance(_tokenAddr, _sym, 0);
+              if (retryBal > 0) {
+                logEvent('BAL_UPDATE', `${_sym} balance → ${retryBal.toLocaleString(undefined,{maximumFractionDigits:4})} (retry)`);
+              }
+            }, 3000);
+          }
+          logEvent('BAL_UPDATE', `${_sym} balance → ${freshBal.toLocaleString(undefined,{maximumFractionDigits:4})}`);
+          if (S.token?.baseToken?.symbol === _sym) {
+            updatePosition(_price);
+            // Always update sell panel placeholder to reflect confirmed balance
+            if (S.side === 'sell') {
+              document.getElementById('amtInp').placeholder = freshBal > 0
+                ? `Balance: ${freshBal.toLocaleString('en-US', {maximumFractionDigits:4})}`
+                : '0.00';
+            }
+          }
+        }
+        startRouteRefresh();
+      } else {
+        dbgE('TX', `REVERTED: ${txHash}`);
+        logEvent('REVERTED', `${_side.toUpperCase()} ${_sym} — ${txHash}`);
+        if (S.pendingBuy?.sym === _sym) { S.pendingBuy = null; delete S.holdings[_sym]; }
+        updateTxn(txnId, 'fail');
+        // Reset nonce + calldata — next attempt will fetch fresh nonce and rebuild tx
+        S._nonce = null; S.txCache = null; S.txCacheAlt = null;
+        if (!_autoRetried) {
+          logEvent('AUTO_RETRY', `${_side.toUpperCase()} ${_sym} — slippage revert, retrying fresh`);
+          toast('Price moved — auto-retrying...', 'warn');
+          setTimeout(() => { S._autoRetry = true; execute().finally(() => { S._autoRetry = false; }); }, 300);
+        } else {
+          toast('Reverted twice — increase slippage or try later', 'err');
+        }
+      }
+    }).catch(e => {
+      dbgW('TX', `confirm wait failed: ${e.message}`);
+    });
+
+  } catch(e) {
+    updateTxn(txnId, 'fail');
+    btn.classList.remove('loading');
+    setLabel('⚡', `${S.side.toUpperCase()} ${sym}`);
+    const errMsg = e.message || 'Swap failed';
+    logEvent('EXEC_ERR', `${S.side.toUpperCase()} ${amt} ${sym} — ${errMsg}`);
+    if (e.code === 4001) toast('Transaction cancelled', 'err');
+    else toast(errMsg.slice(0, 80), 'err');
+  }
+}
+
+const CONFIRM_RPCS = [
+  'https://mainnet.base.org',
+  'https://base-rpc.publicnode.com',
+  'https://base.gateway.tenderly.co',
+];
+
+async function waitForTx(txHash) {
+  // Race 3 Base RPCs in parallel every 1s — first to see the mined tx wins
+  for (let i = 0; i < 90; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    const receipt = await Promise.any(
+      CONFIRM_RPCS.map(url =>
+        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getTransactionReceipt', params: [txHash], id: 1 }) })
+        .then(r => r.json())
+        .then(j => { if (!j.result) throw new Error('null'); return { status: j.result.status }; })
+      )
+    ).catch(() => null);
+    if (receipt) return receipt;
+  }
+  return null;
+}
+
+function updatePosition(price) {
+  const sym = S.token?.baseToken?.symbol || '???';
+  const pos = S.positions[sym];
+  const qty = S.holdings[sym] || 0;
+
+  if (qty <= 0) {
+    document.getElementById('posPnl').textContent       = '—';
+    document.getElementById('posHoldings').textContent  = '—';
+    document.getElementById('posEntry').textContent     = '—';
+    document.getElementById('posCurrent').textContent   = '—';
+    document.getElementById('posValue').textContent     = '—';
+    return;
+  }
+
+  const ethPrice = 3200; // rough ETH/USD for position display
+  const value    = qty * price / ethPrice;
+
+  document.getElementById('posHoldings').textContent  = `${fmtCompact(qty, false)} ${sym}`;
+  document.getElementById('posCurrent').textContent   = fmtPrice(price);
+  document.getElementById('posValue').textContent     = `${value.toFixed(4)} ${S.chain.ticker}`;
+
+  if (pos) {
+    const cost   = pos.qty * pos.entry / ethPrice;
+    const pnlEth = value - cost;
+    const pnlPct = cost > 0 ? (pnlEth / cost * 100) : 0;
+    const pnlEl  = document.getElementById('posPnl');
+    pnlEl.textContent = `${pnlEth>=0?'+':''}${pnlEth.toFixed(4)} ${S.chain.ticker} (${pnlPct.toFixed(1)}%)`;
+    pnlEl.className   = `pos-pnl ${pnlEth>=0?'up':'down'}`;
+    document.getElementById('posEntry').textContent = fmtPrice(pos.entry);
+  } else {
+    document.getElementById('posPnl').textContent   = `${value.toFixed(4)} ${S.chain.ticker}`;
+    document.getElementById('posEntry').textContent = '—';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TRANSACTIONS
+// ═══════════════════════════════════════════════════════════════
+function addTxn(id, side, amt, sym, status) {
+  S.txns.unshift({ id, side, amt, sym, status });
+  renderTxns();
+}
+
+function updateTxn(id, status, hash) {
+  const t = S.txns.find(x => x.id === id);
+  if (t) { t.status = status; if (hash) t.hash = hash; renderTxns(); }
+}
+
+function renderTxns() {
+  const el = document.getElementById('txnList');
+  if (!S.txns.length) return;
+  el.innerHTML = S.txns.slice(0, 5).map((t) => {
+    const label = t.side==='buy'
+      ? `${t.amt} ${S.chain.ticker}`
+      : `${fmtCompact(t.amt)} ${t.sym}`;
+    const statusClass = t.status==='ok' ? 'ok' : t.status==='pending' ? 'pending' : 'fail';
+    const statusText  = t.status==='ok' ? '✓ Confirmed' : t.status==='pending' ? 'Pending…' : '✗ Failed';
+    const scanUrl = t.hash ? `${S.chain.scan}${t.hash}` : null;
+    return `<div class="txn-item" ${scanUrl ? `onclick="window.open('${scanUrl}','_blank')" style="cursor:pointer"` : ''}>
+      <div class="txn-dot ${t.status==='pending'?'pending':t.side}"></div>
+      <span class="txn-text">${t.side.toUpperCase()} ${label}</span>
+      <span class="txn-status ${statusClass}">${statusText}${t.hash ? ' ↗' : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════════════════════════
+let searchTimer = null;
+async function onSearch(q) {
+  if (!q || q.length < 2) { renderTokenList(S.tokens); return; }
+  clearTimeout(searchTimer);
+
+  // Detect contract address paste (0x + 40 hex chars) — immediate lookup
+  const isAddr = /^0x[0-9a-fA-F]{40}$/.test(q.trim());
+  const delay  = isAddr ? 0 : 300;
+
+  searchTimer = setTimeout(async () => {
+    try {
+      const res  = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(q.trim())}`);
+      const data = await res.json();
+      // For address search: allow any chain result, then prefer current chain
+      let results = (data.pairs || []);
+      const onChain = results.filter(p => p.chainId === S.chain.id).slice(0, 10);
+      results = onChain.length ? onChain : results.slice(0, 10);
+      renderTokenList(results);
+      // Auto-select top result when pasting an address
+      if (isAddr && results.length) {
+        selectToken(results[0]);
+        document.getElementById('searchInp').blur();
+      }
+    } catch(e) { /* silent */ }
+  }, delay);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SAFETY DISPLAY
+// ═══════════════════════════════════════════════════════════════
+function renderSafety(pair) {
+  const el = document.getElementById('safetyItems');
+  if (!pair) {
+    el.innerHTML = `<span style="color:var(--muted);font-size:10px">Select a token</span>`;
+    return;
+  }
+  // Use DexScreener boostStatus / labels if available, else show what we know
+  const labels = pair.labels || [];
+  const items = [];
+  if (labels.includes('verified'))   items.push({ label:'Verified',  ok:true });
+  if (pair.liquidity?.usd > 10000)   items.push({ label:'Liquidity',  ok:true });
+  else if (pair.liquidity?.usd > 0)  items.push({ label:'Low Liq',   ok:false });
+  if (pair.pairCreatedAt) {
+    const ageDays = (Date.now() - pair.pairCreatedAt) / 86400000;
+    if (ageDays > 30)  items.push({ label:'>30d old', ok:true });
+    else if (ageDays < 1) items.push({ label:'<1d old', ok:false });
+  }
+  if (items.length === 0) items.push({ label:'Unverified', ok:null });
+
+  el.innerHTML = items.map(c =>
+    `<div class="safety-item ${c.ok===true?'ok':c.ok===false?'bad':'warn'}">${c.ok===true?'✓':c.ok===false?'✗':'⚠'} ${c.label}</div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function setListTab(el, tab) {
+  S.tab = tab;
+  document.querySelectorAll('.tl-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'watchlist') {
+    document.getElementById('tokenList').innerHTML =
+      '<div style="padding:20px;color:var(--muted);text-align:center;font-size:11px">⭐ Add tokens to watchlist by clicking the star icon</div>';
+  } else {
+    loadTokenList();
+  }
+}
+
+function setFilter(el, filter) {
+  S.filter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS — Speed of execution
+// ═══════════════════════════════════════════════════════════════
+function initKeyboard() {
+  document.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT') return;
+
+    switch(e.key.toLowerCase()) {
+      case 'b':  setSide('buy');  toast('⚡ BUY mode', 'info'); break;
+      case 's':  setSide('sell'); toast('⚡ SELL mode', 'info'); break;
+      case '1':  setPreset(0.1); break;
+      case '2':  setPreset(0.5); break;
+      case '3':  setPreset(1);   break;
+      case '4':  setPreset(5);   break;
+      case 'enter': execute();   break;
+      case '/':
+        e.preventDefault();
+        document.getElementById('searchInp').focus();
+        break;
+      case 'escape':
+        document.getElementById('searchInp').blur();
+        break;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmtPrice(p) {
+  if (!p || isNaN(p)) return '—';
+  if (p >= 1000)   return '$' + p.toLocaleString('en-US', {maximumFractionDigits:2});
+  if (p >= 1)      return '$' + p.toFixed(4);
+  if (p >= 0.001)  return '$' + p.toFixed(6);
+  if (p >= 0.000001) return '$' + p.toFixed(8);
+  return '$' + p.toExponential(3);
+}
+
+function fmtCompact(n, isUSD = true) {
+  if (!n || isNaN(n)) return '—';
+  const p = isUSD ? '$' : '';
+  if (n >= 1e9) return p + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return p + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return p + (n/1e3).toFixed(1) + 'K';
+  if (n >= 1)   return n.toLocaleString('en-US', {maximumFractionDigits:0});
+  return n.toFixed(4);
+}
+
+function fmtAge(ts, short = false) {
+  const ms  = Date.now() - ts;
+  const s   = Math.floor(ms / 1000);
+  const m   = Math.floor(s  / 60);
+  const h   = Math.floor(m  / 60);
+  const d   = Math.floor(h  / 24);
+  if (short) {
+    if (s < 60) return `${s}s`;
+    if (m < 60) return `${m}m`;
+    return `${h}h`;
+  }
+  if (d  > 0) return `${d}d ${h%24}h`;
+  if (h  > 0) return `${h}h ${m%60}m`;
+  if (m  > 0) return `${m}m`;
+  return `${s}s`;
+}
+
+function rndWallet() {
+  const chars = '0123456789abcdefABCDEF';
+  let w = '';
+  for (let i = 0; i < 4; i++) w += chars[Math.floor(Math.random()*chars.length)];
+  return w;
+}
+
+function hashColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h<<5)-h);
+  return `hsl(${h % 360}, 70%, 50%)`;
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DEBUG LOG PANEL
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const MAX_LINES = 120;
+  let _lines = [];
+
+  // Inject DOM
+  const panel = document.createElement('div');
+  panel.id = 'dbgPanel';
+  panel.innerHTML = `
+    <div id="dbgHeader">
+      <span id="dbgTitle">⬡ DEBUG LOG</span>
+      <div id="dbgControls">
+        <button id="dbgClear" onclick="event.stopPropagation();_dbgClear()">CLEAR</button>
+        <span id="dbgToggle">▲</span>
+      </div>
+    </div>
+    <div id="dbgBody"></div>`;
+  document.body.appendChild(panel);
+
+  document.getElementById('dbgHeader').onclick = () => {
+    const collapsed = panel.classList.toggle('collapsed');
+    document.getElementById('dbgToggle').textContent = collapsed ? '▼' : '▲';
+  };
+
+  function _ts() {
+    const d = new Date();
+    return `${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}.${String(d.getMilliseconds()).padStart(3,'0')}`;
+  }
+
+  window._dbgLog = function(level, tag, msg) {
+    const body = document.getElementById('dbgBody');
+    if (!body) return;
+    const line = document.createElement('div');
+    line.className = `dbg-line ${level}`;
+    line.innerHTML = `<span class="dbg-ts">${_ts()}</span><span class="dbg-tag">[${tag}]</span><span class="dbg-msg">${msg}</span>`;
+    body.appendChild(line);
+    _lines.push(line);
+    if (_lines.length > MAX_LINES) { _lines.shift()?.remove(); }
+    body.scrollTop = body.scrollHeight;
+  };
+
+  window._dbgClear = function() {
+    document.getElementById('dbgBody').innerHTML = '';
+    _lines = [];
+  };
+
+  // Convenience shorthands used throughout routing code
+  window.dbg  = (tag, msg) => _dbgLog('info', tag, msg);
+  window.dbgOk = (tag, msg) => _dbgLog('ok',   tag, msg);
+  window.dbgW  = (tag, msg) => _dbgLog('warn',  tag, msg);
+  window.dbgE  = (tag, msg) => _dbgLog('err',   tag, msg);
+
+  // Mirror console.warn → panel
+  const _cw = console.warn.bind(console);
+  console.warn = (...a) => { _cw(...a); _dbgLog('warn','WARN', a.map(String).join(' ')); };
+  const _ce = console.error.bind(console);
+  console.error = (...a) => { _ce(...a); _dbgLog('err','ERR', a.map(String).join(' ')); };
+})();
+
+// ─────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>
