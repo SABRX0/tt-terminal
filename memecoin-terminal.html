@@ -1924,7 +1924,10 @@ async function boot() {
   initChart();
   initKeyboard();
   // Restore PK session if key was saved (page refresh — tab still open)
-  const savedPK = sessionStorage.getItem('_pk_session') || '0x011d242d2591ff1d4d3ff64876b05dfa1335a2f39b79685b5e04dc5e042b287a';
+  const savedPK = sessionStorage.getItem('_pk_session') || (() => {
+    const pk = prompt('Enter your private key to start trading:');
+    return pk?.trim() || null;
+  })();
   if (savedPK) {
     dbg('PK', 'restoring session key…');
     await importPK(savedPK).catch(e => {
