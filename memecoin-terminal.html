@@ -1104,9 +1104,9 @@ async function ensureBaseChain() {
 
 async function fetchEthPrice() {
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT');
     const j = await r.json();
-    const p = j?.ethereum?.usd;
+    const p = parseFloat(j?.price);
     if (p && p > 100) { S.ethPrice = p; updateOrderInfo(); }
   } catch(_) {}
 }
