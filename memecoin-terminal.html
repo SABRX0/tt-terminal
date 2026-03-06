@@ -2722,6 +2722,8 @@ async function execute() {
     const _execInDec = S.side === 'buy' ? 18 : (S.tokenDec || 18);
     const inAmt = ethers.utils.parseUnits(amt.toFixed(Math.min(_execInDec, 8)), _execInDec).toString();
     const slip  = +S.slip || 2;
+    // On auto-retry, bump slippage to 5% min — covers price movement during approval/wrap window
+    const effectiveSlip = _autoRetried ? Math.max(slip, 5) : slip;
     logEvent('EXEC_START', `${S.side.toUpperCase()} ${amt} ${sym} dec=${_execInDec} — txCache=${!!S.txCache} alt=${!!(S.txCacheAlt?.side===S.side)} routeCache=${!!S.routeCache}`);
 
     // ── 1. Check pre-assembled tx cache FIRST — skip route phase if warm ──
@@ -2787,7 +2789,7 @@ async function execute() {
       const built = await new Promise((resolve, reject) => {
         let failed = 0;
         for (const route of routes) {
-          buildTxFromCache(route, S.wallet.address, slip)
+          buildTxFromCache(route, S.wallet.address, effectiveSlip)
             .then(s => resolve({ swap: s, via: route.via }))
             .catch(e => {
               logEvent('BUILD_ERR', `${route.via} failed: ${e.message}`);
@@ -2860,20 +2862,29 @@ async function execute() {
         S.approvedFor[approvalKey] = true;
         try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
         // Rebuild swap tx with fresh calldata now that approval is done (nonce shifted, old calldata stale)
+        // IMPORTANT: only switch to rebuilt tx if the router address matches — a different router
+        // means the approval we just sent won't cover it, causing an allowance revert.
         setLabel('⚡', 'Rebuilding…');
+        const approvedRouter = swap.to;
         const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
         if (routes.length) {
           try {
             const freshBuilt = await new Promise((res, rej) => {
               let f = 0;
               for (const r of routes) {
-                buildTxFromCache(r, S.wallet.address, slip)
+                buildTxFromCache(r, S.wallet.address, effectiveSlip)
                   .then(s => res({ swap: s, via: r.via }))
                   .catch(() => { if (++f === routes.length) rej(new Error('rebuild failed')); });
               }
             });
-            swap = freshBuilt.swap;
-            logEvent('APPROVE_REBUILD', `fresh tx via ${freshBuilt.via}`);
+            if (freshBuilt.swap.to === approvedRouter) {
+              swap = freshBuilt.swap;
+              logEvent('APPROVE_REBUILD', `fresh tx via ${freshBuilt.via}`);
+            } else {
+              // Router changed — the approval targets approvedRouter, not freshBuilt router.
+              // Keep original swap (calldata still valid, will be re-signed with new nonce below).
+              logEvent('APPROVE_REBUILD', `skipped — router changed (${approvedRouter.slice(0,8)}→${freshBuilt.swap.to.slice(0,8)}), keeping original`);
+            }
           } catch(_) { /* keep existing swap */ }
         }
       }
