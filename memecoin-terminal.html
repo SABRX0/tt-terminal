@@ -903,7 +903,7 @@ const S = {
   allRoutes:    [],     // all valid routes from last cycle, sorted best→worst
   txCache:      null,   // { swap, via, inAmt, ts } — pre-assembled tx (current side)
   txCacheAlt:   null,   // { swap, via, inAmt, side, ts } — pre-assembled tx (opposite side)
-  approvedFor:  JSON.parse(localStorage.getItem('_approvedFor')||'{}'), // persisted across sessions
+  approvedFor:  {}, // loaded in importPK after verifying wallet address matches
   refreshTimer: null,   // background quote loop
   quoteTimer:   null,   // debounce for updateOrderInfo
   _amtDebounce: null,   // debounce for amount-change re-quote
@@ -971,7 +971,7 @@ async function connectWallet() {
     window.ethereum.on('accountsChanged', a => {
       if (!a.length) disconnectWallet();
       else {
-        if (S.wallet.address !== a[0]) { S.approvedFor = {}; try { localStorage.removeItem('_approvedFor'); } catch(_) {} }
+        if (S.wallet.address !== a[0]) { S.approvedFor = {}; try { localStorage.removeItem('_approvedFor'); localStorage.removeItem('_approvedForAddr'); } catch(_) {} }
         S.wallet.address = a[0]; refreshBalance(); updateWalletUI();
       }
     });
@@ -1045,10 +1045,13 @@ async function importPK(rawOverride) {
     // sessionStorage clears when the tab is closed — acceptable security trade-off
     try { sessionStorage.setItem('_pk_session', raw); } catch(_) {}
 
-    // Clear approvedFor if wallet address changed — new wallet has no approvals on-chain
-    if (S.wallet.address && S.wallet.address !== wallet.address) {
+    // Load approvedFor only if it belongs to THIS wallet — prevents stale approvals after wallet switch or fresh load
+    const _savedApprAddr = localStorage.getItem('_approvedForAddr');
+    if (_savedApprAddr === wallet.address) {
+      S.approvedFor = JSON.parse(localStorage.getItem('_approvedFor') || '{}');
+    } else {
       S.approvedFor = {};
-      try { localStorage.removeItem('_approvedFor'); } catch(_) {}
+      try { localStorage.removeItem('_approvedFor'); localStorage.removeItem('_approvedForAddr'); } catch(_) {}
     }
     S.wallet.signer    = wallet;
     S.wallet.address   = wallet.address;
@@ -2845,7 +2848,7 @@ async function execute() {
           toast('Token approved ✓', 'ok');
         }
         S.approvedFor[approvalKey] = true;
-        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); } catch(_) {}
+        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
         // Rebuild swap tx with fresh calldata now that approval is done (nonce shifted, old calldata stale)
         setLabel('⚡', 'Rebuilding…');
         const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
@@ -2917,7 +2920,7 @@ async function execute() {
           toast('WETH approved ✓', 'ok');
         }
         S.approvedFor[wethApprovalKey] = true;
-        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); } catch(_) {}
+        try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
         // Rebuild kyber calldata with fresh deadline/nonce
         setLabel('⚡', 'Rebuilding…');
         const routes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
