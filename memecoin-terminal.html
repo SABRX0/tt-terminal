@@ -3295,11 +3295,12 @@ function esc(str) {
 
 function fmtPrice(p) {
   if (!p || isNaN(p)) return '—';
-  if (p >= 1000)   return '$' + p.toLocaleString('en-US', {maximumFractionDigits:2});
-  if (p >= 1)      return '$' + p.toFixed(4);
-  if (p >= 0.001)  return '$' + p.toFixed(6);
-  if (p >= 0.000001) return '$' + p.toFixed(8);
-  return '$' + p.toExponential(3);
+  if (p >= 1000)      return '$' + p.toLocaleString('en-US', {maximumFractionDigits:2});
+  if (p >= 1)         return '$' + p.toFixed(4);
+  if (p >= 0.001)     return '$' + p.toFixed(6);
+  if (p >= 0.000001)  return '$' + p.toFixed(8);
+  if (p >= 0.0000001) return '$' + p.toFixed(10);
+  return '$' + p.toFixed(12);
 }
 
 function fmtCompact(n, isUSD = true) {
