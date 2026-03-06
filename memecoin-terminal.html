@@ -970,7 +970,10 @@ async function connectWallet() {
     updateWalletUI();
     window.ethereum.on('accountsChanged', a => {
       if (!a.length) disconnectWallet();
-      else { S.wallet.address = a[0]; refreshBalance(); updateWalletUI(); }
+      else {
+        if (S.wallet.address !== a[0]) { S.approvedFor = {}; try { localStorage.removeItem('_approvedFor'); } catch(_) {} }
+        S.wallet.address = a[0]; refreshBalance(); updateWalletUI();
+      }
     });
     window.ethereum.on('chainChanged', () => location.reload());
     dbgOk('WALLET','connected ✓');
@@ -1042,6 +1045,11 @@ async function importPK(rawOverride) {
     // sessionStorage clears when the tab is closed — acceptable security trade-off
     try { sessionStorage.setItem('_pk_session', raw); } catch(_) {}
 
+    // Clear approvedFor if wallet address changed — new wallet has no approvals on-chain
+    if (S.wallet.address && S.wallet.address !== wallet.address) {
+      S.approvedFor = {};
+      try { localStorage.removeItem('_approvedFor'); } catch(_) {}
+    }
     S.wallet.signer    = wallet;
     S.wallet.address   = wallet.address;
     S.wallet.connected = true;
