@@ -2935,9 +2935,11 @@ async function execute() {
         S.approvedFor[wethApprovalKey] = true;
         try { localStorage.setItem('_approvedFor', JSON.stringify(S.approvedFor)); localStorage.setItem('_approvedForAddr', S.wallet.address); } catch(_) {}
       }
-      // ALWAYS rebuild KyberSwap calldata after WRAP±APPROVE — ensures fresh minAmountOut
-      // (WRAP is fire-and-forget; SWAP executes ~2s later after WRAP confirms, price can move >slippage)
-      setLabel('⚡', 'Rebuilding…');
+      // ALWAYS rebuild KyberSwap calldata with a FRESH route quote — the routeSummary baked into
+      // S.allRoutes can be up to 3s old (background cycle interval). A stale routeSummary means
+      // minAmountOut is based on stale price → revert even with correct WETH balance/approval.
+      setLabel('⚡', 'Refreshing quote…');
+      await Promise.race([runQuoteCycle(), new Promise(r => setTimeout(r, 3000))]).catch(() => {});
       const _kyberRoutes = S.allRoutes?.length ? S.allRoutes : (S.routeCache ? [S.routeCache] : []);
       if (_kyberRoutes.length) {
         try {
