@@ -3,283 +3,240 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>All Perps — Discover</title>
+<title>All Perps — Discover (web)</title>
 <style>
   :root{
-    --bg:#07080c;
-    --card:#0f1118; --card2:#141722; --glass:rgba(255,255,255,.04);
+    --bg:#07080c; --bg2:#0b0d13;
+    --card:#0f1118; --card2:#141722; --glass:rgba(255,255,255,.035);
     --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.045);
     --txt:#f5f6fb; --dim:#9498ab; --dimmer:#5e6276;
-    --green:#25e08b; --greensoft:rgba(37,224,139,.14);
-    --red:#ff4d6d; --redsoft:rgba(255,77,109,.14);
-    --violet:#7b6cff; --violetsoft:rgba(123,108,255,.16);
+    --green:#25e08b; --greensoft:rgba(37,224,139,.13);
+    --red:#ff4d6d; --redsoft:rgba(255,77,109,.13);
+    --violet:#7b6cff; --violetsoft:rgba(123,108,255,.15);
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
   body{
-    background:
-      radial-gradient(900px 500px at 20% -5%, rgba(123,108,255,.16), transparent 60%),
-      radial-gradient(700px 500px at 90% 10%, rgba(37,224,139,.08), transparent 55%),
-      var(--bg);
-    color:var(--txt);
+    background:#04050a;
     font-family:-apple-system,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;
-    min-height:100vh; padding:52px 20px 70px;
-    display:flex; flex-direction:column; align-items:center;
+    color:var(--txt); padding:26px 18px 60px; min-height:100vh;
   }
-  .title{text-align:center;margin-bottom:34px}
-  .title h1{font-size:26px;font-weight:800;letter-spacing:-.6px}
-  .title p{color:var(--dim);font-size:13.5px;margin-top:7px}
-  .title .z{font-family:"SF Mono",ui-monospace,Menlo,monospace}
-
-  .rack{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
-  .col{display:flex;flex-direction:column;align-items:center;gap:14px}
-  .caption{color:var(--dim);font-size:12.5px;font-weight:600;letter-spacing:.2px}
-  .caption span{color:var(--dimmer);font-weight:500}
-
-  /* ===== phone ===== */
-  .phone{
-    width:332px;height:718px;border-radius:44px;position:relative;
-    background:linear-gradient(160deg,#16181f,#0b0c11);
-    padding:7px;
-    box-shadow:
-      0 40px 90px -30px rgba(0,0,0,.9),
-      0 0 0 1.5px rgba(255,255,255,.06),
-      inset 0 1px 1px rgba(255,255,255,.08);
+  .frame{
+    max-width:1240px;margin:0 auto;border-radius:14px;overflow:hidden;
+    box-shadow:0 40px 100px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.05);
+    background:var(--bg);
   }
-  .screen{
-    width:100%;height:100%;border-radius:38px;overflow:hidden;position:relative;
-    background:
-      radial-gradient(600px 300px at 50% -8%, rgba(123,108,255,.12), transparent 60%),
-      var(--bg);
-    display:flex;flex-direction:column;
-  }
-  .dyn{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:88px;height:26px;background:#000;border-radius:16px;z-index:20}
-  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:15px 22px 0;font-size:12px;font-weight:600;z-index:10}
-  .statusbar .r{display:flex;gap:6px;align-items:center;color:var(--txt);font-size:11px}
+  /* browser chrome */
+  .chrome{display:flex;align-items:center;gap:14px;padding:11px 16px;background:#0e1016;border-bottom:1px solid var(--line2)}
+  .dots{display:flex;gap:7px}.dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .dots i:nth-child(1){background:#ff5f57}.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+  .url{flex:1;background:#191c24;border-radius:8px;padding:6px 13px;color:var(--dim);font-size:12px;text-align:center;max-width:420px;margin:0 auto}
+  .url b{color:var(--txt);font-weight:600}
 
-  .body{flex:1;overflow:hidden;padding:0 16px;position:relative}
+  /* app top nav */
+  .nav{display:flex;align-items:center;gap:26px;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--line2);position:sticky;top:0;z-index:10}
+  .logo{font-weight:800;font-size:17px;letter-spacing:-.4px}
+  .logo .z{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  .navlinks{display:flex;gap:4px}
+  .navlinks a{color:var(--dim);text-decoration:none;font-size:13.5px;font-weight:600;padding:7px 13px;border-radius:9px}
+  .navlinks a.on{color:var(--txt);background:var(--glass)}
+  .navsearch{flex:1;max-width:340px;margin:0 auto;display:flex;align-items:center;gap:9px;background:var(--glass);border:1px solid var(--line);border-radius:11px;padding:9px 13px;color:var(--dimmer);font-size:13px}
+  .navright{display:flex;align-items:center;gap:12px}
+  .bal{color:var(--dim);font-size:13px}.bal b{color:var(--txt);font-variant-numeric:tabular-nums}
+  .deposit{background:linear-gradient(180deg,#8b7dff,#6d5cf5);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;box-shadow:0 8px 20px -8px rgba(123,108,255,.6)}
+  .pfp{width:34px;height:34px;border-radius:50%;background:conic-gradient(from 210deg,#7b6cff,#25e08b,#ff4d6d,#7b6cff);padding:1.5px}
+  .pfp i{display:block;width:100%;height:100%;border-radius:50%;background:#0b0c11}
 
-  .apphead{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 2px 12px}
-  .apphead h2{font-size:23px;font-weight:800;letter-spacing:-.5px;line-height:1}
-  .apphead .sub{color:var(--dim);font-size:11.5px;margin-top:5px}
-  .avatar{width:34px;height:34px;border-radius:50%;background:conic-gradient(from 210deg,#7b6cff,#25e08b,#ff4d6d,#7b6cff);padding:1.5px}
-  .avatar i{display:block;width:100%;height:100%;border-radius:50%;background:#0b0c11;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);font-style:normal;font-weight:700}
+  .page{padding:24px}
+  .pagehead{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+  .pagehead h1{font-size:26px;font-weight:800;letter-spacing:-.6px}
+  .pagehead p{color:var(--dim);font-size:13.5px;margin-top:5px}
+  .filters{display:flex;gap:8px}
+  .filters div{padding:8px 15px;border-radius:11px;font-size:13px;font-weight:700;color:var(--dim);background:var(--glass);border:1px solid var(--line2);cursor:pointer}
+  .filters div.on{color:#0a0b0f;background:linear-gradient(180deg,#fff,#e9eaf2);border-color:transparent}
 
-  .search{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--line);border-radius:13px;padding:10px 13px;color:var(--dimmer);font-size:12.5px;margin-bottom:13px}
-  .search svg{opacity:.6}
+  /* hot strip */
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+  .hot{border-radius:16px;padding:15px 16px;position:relative;overflow:hidden;background:linear-gradient(150deg,rgba(255,77,109,.14),rgba(15,17,24,.3) 60%),var(--card);border:1px solid var(--line)}
+  .hot .badge{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--red);background:var(--redsoft);padding:3px 8px;border-radius:6px}
+  .hot .head{display:flex;align-items:center;gap:10px;margin:12px 0 6px}
+  .tic{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#08090d;box-shadow:inset 0 -6px 12px rgba(0,0,0,.25)}
+  .hot .nm{font-weight:800;font-size:15px}
+  .hot .px{color:var(--dim);font-size:11.5px;font-variant-numeric:tabular-nums}
+  .hot .chg{margin-left:auto;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+  .hot .chart{height:38px;margin:8px 0 12px}
+  .hot .chart svg{width:100%;height:100%;display:block}
+  .hot .btns{display:flex;gap:8px}
+  .mini{flex:1;border:none;border-radius:10px;padding:9px;font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
+  .mini.short{background:linear-gradient(180deg,#ff5c7a,#e8324f);color:#fff}
+  .mini.long{background:var(--greensoft);color:var(--green);border:1px solid rgba(37,224,139,.28)}
 
-  .segs{display:flex;gap:7px;margin-bottom:16px}
-  .seg{flex:0 0 auto;padding:7px 14px;border-radius:11px;font-size:12px;font-weight:700;color:var(--dim);background:var(--glass);border:1px solid var(--line2)}
-  .seg.on{color:#0a0b0f;background:linear-gradient(180deg,#fff,#e9eaf2);border-color:transparent}
+  /* main grid: table + sidebar */
+  .grid{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line2);border-radius:16px;overflow:hidden}
+  .panel .ph{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line2)}
+  .panel .ph h3{font-size:14px;font-weight:800}
+  .panel .ph .sub{font-size:11px;color:var(--dimmer);font-weight:600}
 
-  /* featured hero */
-  .hero{
-    border-radius:20px;padding:15px 16px 14px;margin-bottom:20px;position:relative;overflow:hidden;
-    background:linear-gradient(155deg, rgba(255,77,109,.16), rgba(15,17,24,.4) 55%), var(--card);
-    border:1px solid var(--line);
-    box-shadow:0 20px 40px -24px rgba(255,77,109,.4);
-  }
-  .hero .tagrow{display:flex;align-items:center;gap:7px;margin-bottom:11px}
-  .hpill{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--red);background:var(--redsoft);padding:3px 8px;border-radius:6px}
-  .hero .grab{color:var(--dim);font-size:10.5px;font-weight:600}
-  .hero .main{display:flex;align-items:center;gap:11px}
-  .tok-ic{width:40px;height:40px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#08090d;box-shadow:inset 0 -6px 12px rgba(0,0,0,.25)}
-  .hero .nm{font-size:17px;font-weight:800;letter-spacing:-.3px}
-  .hero .px{color:var(--dim);font-size:11.5px;margin-top:1px;font-variant-numeric:tabular-nums}
-  .hero .chg{margin-left:auto;text-align:right}
-  .hero .chg b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
-  .hero .chg span{display:block;font-size:10px;color:var(--dim);margin-top:1px}
-  .herochart{height:52px;margin:12px 0 13px}
-  .herochart svg{width:100%;height:100%;display:block}
-  .herobtns{display:flex;gap:9px}
-  .btn{flex:1;border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:800;font-family:inherit;letter-spacing:.2px;cursor:pointer}
-  .btn.short{background:linear-gradient(180deg,#ff5c7a,#e8324f);color:#fff;box-shadow:0 8px 20px -8px rgba(255,77,109,.6)}
-  .btn.long{background:var(--greensoft);color:var(--green);border:1px solid rgba(37,224,139,.28)}
-
-  .sectitle{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 9px}
-  .sectitle .l{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim)}
-  .sectitle .r{font-size:10.5px;color:var(--dimmer);font-weight:600}
-
-  .row{display:flex;align-items:center;gap:11px;padding:9px 4px}
-  .row + .row{border-top:1px solid var(--line2)}
-  .rtok{display:flex;align-items:center;gap:10px;min-width:104px}
-  .rtok .nm{font-weight:800;font-size:13.5px;letter-spacing:-.2px}
-  .rtok .oi{color:var(--dimmer);font-size:10px;margin-top:1px;font-variant-numeric:tabular-nums}
-  .spark{flex:1;height:26px}
-  .spark svg{width:100%;height:100%;display:block}
-  .rend{text-align:right;min-width:58px}
-  .rend .p{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
-  .rend .c{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--dimmer);font-weight:700;padding:11px 18px}
+  thead th.r{text-align:right}
+  tbody td{padding:13px 18px;border-top:1px solid var(--line2);vertical-align:middle}
+  tbody tr:hover{background:var(--glass)}
+  .mkt{display:flex;align-items:center;gap:11px}
+  .mkt .nm{font-weight:800;font-size:14px}
+  .mkt .tag{font-size:9px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:5px;margin-left:2px;vertical-align:middle}
+  .tag.new{background:var(--greensoft);color:var(--green)}
+  .tag.hot{background:var(--redsoft);color:var(--red)}
+  .mkt .oi{color:var(--dimmer);font-size:10.5px;margin-top:1px;font-variant-numeric:tabular-nums}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px}
+  td .chg{font-weight:800;font-variant-numeric:tabular-nums}
   .pos{color:var(--green)}.neg{color:var(--red)}
-  .act{border:none;border-radius:9px;padding:8px 12px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;margin-left:2px}
-  .act.s{background:var(--redsoft);color:var(--red)}
+  .tspark{width:96px;height:30px}.tspark svg{width:100%;height:100%;display:block}
+  .tactions{display:flex;gap:7px;justify-content:flex-end}
+  .act{border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
   .act.l{background:var(--greensoft);color:var(--green)}
+  .act.s{background:var(--redsoft);color:var(--red)}
 
-  .gap{height:16px}
-  .fade{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
-
-  .tabbar{display:flex;justify-content:space-around;align-items:center;padding:12px 8px 24px;border-top:1px solid var(--line2);background:rgba(7,8,12,.6);backdrop-filter:blur(10px)}
-  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--dimmer);font-size:9.5px;font-weight:600}
-  .tab.on{color:var(--txt)}
-  .tab svg{width:21px;height:21px}
-
-  /* second phone: token/trade */
-  .th{padding:14px 2px 10px}
-  .th .back{color:var(--dim);font-size:13px;margin-bottom:12px}
-  .th .top{display:flex;align-items:center;gap:11px}
-  .th .nm{font-size:19px;font-weight:800}
-  .th .px{margin-left:auto;text-align:right}
-  .th .px b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
-  .th .px span{display:block;font-size:11px;font-weight:700}
-  .bigchart{height:150px;margin:14px 0 4px}
-  .bigchart svg{width:100%;height:100%}
-  .rng{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
-  .rng div{font-size:10.5px;color:var(--dimmer);padding:4px 10px;border-radius:8px;font-weight:700}
-  .rng div.on{color:var(--txt);background:var(--glass)}
-  .lstoggle{display:flex;background:var(--glass);border:1px solid var(--line2);border-radius:13px;padding:4px;margin-bottom:14px}
-  .lstoggle div{flex:1;text-align:center;padding:10px;border-radius:10px;font-weight:800;font-size:13px;color:var(--dim)}
-  .lstoggle .short{background:linear-gradient(180deg,#ff5c7a,#e8324f);color:#fff}
-  .field{background:var(--glass);border:1px solid var(--line2);border-radius:13px;padding:12px 13px;margin-bottom:11px}
-  .field .lab{color:var(--dim);font-size:11px;margin-bottom:3px}
-  .field .val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
-  .chips{display:flex;gap:6px;margin-top:9px}
-  .chips span{font-size:10.5px;color:var(--dim);background:var(--glass);border:1px solid var(--line2);border-radius:8px;padding:5px 9px;font-weight:700}
-  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 2px;color:var(--dim)}
-  .kv b{color:var(--txt);font-weight:700;font-variant-numeric:tabular-nums}
-  .kv .liq{color:var(--red)}
+  /* sidebar cards */
+  .side{display:flex;flex-direction:column;gap:18px}
+  .slist{padding:6px 0}
+  .srow{display:flex;align-items:center;gap:10px;padding:10px 16px}
+  .srow:hover{background:var(--glass)}
+  .srow .nm{font-weight:700;font-size:13px}
+  .srow .meta{color:var(--dimmer);font-size:10.5px;margin-top:1px;font-variant-numeric:tabular-nums}
+  .srow .chg{margin-left:auto;font-weight:800;font-size:12.5px;font-variant-numeric:tabular-nums}
+  .balcard{background:linear-gradient(150deg,var(--violetsoft),rgba(15,17,24,.2)),var(--card);border:1px solid var(--line);border-radius:16px;padding:17px 18px}
+  .balcard .lab{color:var(--dim);font-size:12px}
+  .balcard .big{font-size:26px;font-weight:800;margin:4px 0 12px;font-variant-numeric:tabular-nums}
+  .balcard .row2{display:flex;gap:9px}
+  .balcard button{flex:1;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
+  .balcard .dep{background:linear-gradient(180deg,#8b7dff,#6d5cf5);color:#fff}
+  .balcard .wd{background:var(--glass);color:var(--txt);border:1px solid var(--line)}
 </style>
 </head>
 <body>
-
-  <div class="title">
-    <h1>All <span class="z">Perps</span> — Discover</h1>
-    <p>The home screen answers one question: what is worth trading right now.</p>
-  </div>
-
-  <div class="rack">
-
-    <!-- ============ PHONE 1: DISCOVER ============ -->
-    <div class="col">
-    <div class="phone"><div class="screen">
-      <div class="dyn"></div>
-      <div class="statusbar"><span>9:41</span><span class="r">5G &nbsp; 100</span></div>
-
-      <div class="body">
-        <div class="apphead">
-          <div><h2>Discover</h2><div class="sub">14 markets moving now</div></div>
-          <div class="avatar"><i>$1.2k</i></div>
-        </div>
-
-        <div class="search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9498ab" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          Search ticker or paste a mint
-        </div>
-
-        <div class="segs">
-          <div class="seg on">Hot</div><div class="seg">New</div><div class="seg">Movers</div><div class="seg">Picks</div>
-        </div>
-
-        <!-- featured -->
-        <div class="hero">
-          <div class="tagrow"><span class="hpill">Running hot</span><span class="grab">up 240% today · short the pump?</span></div>
-          <div class="main">
-            <div class="tok-ic" style="background:radial-gradient(circle at 30% 25%,#ffe08a,#f7b733)">M</div>
-            <div><div class="nm">MOODENG</div><div class="px">$0.4218 · $2.1M OI</div></div>
-            <div class="chg"><b class="pos">+240%</b><span>24h</span></div>
-          </div>
-          <div class="herochart">
-            <svg viewBox="0 0 300 52" preserveAspectRatio="none">
-              <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25e08b" stop-opacity=".35"/><stop offset="1" stop-color="#25e08b" stop-opacity="0"/></linearGradient></defs>
-              <path d="M0,46 L20,44 40,45 60,38 80,40 100,30 120,33 140,22 160,25 180,14 200,17 220,9 240,12 260,6 280,8 300,3" fill="none" stroke="#25e08b" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M0,46 L20,44 40,45 60,38 80,40 100,30 120,33 140,22 160,25 180,14 200,17 220,9 240,12 260,6 280,8 300,3 L300,52 L0,52 Z" fill="url(#hg)"/>
-            </svg>
-          </div>
-          <div class="herobtns">
-            <button class="btn short">Short</button>
-            <button class="btn long">Long</button>
-          </div>
-        </div>
-
-        <div class="sectitle"><span class="l">Just made shortable</span><span class="r">new markets</span></div>
-
-        <div class="row">
-          <div class="rtok"><div class="tok-ic" style="width:34px;height:34px;font-size:12px;background:radial-gradient(circle at 30% 25%,#7cf0c0,#25c07a)">G</div><div><div class="nm">GORK</div><div class="oi">listed 2h · $0.132</div></div></div>
-          <div class="spark"><svg viewBox="0 0 90 26" preserveAspectRatio="none"><polyline points="0,20 12,18 24,19 36,13 48,15 60,9 72,11 90,5" fill="none" stroke="#25e08b" stroke-width="1.8"/></svg></div>
-          <div class="rend"><div class="p">$0.132</div><div class="c pos">+31%</div></div>
-          <button class="act s">Short</button>
-        </div>
-        <div class="row">
-          <div class="rtok"><div class="tok-ic" style="width:34px;height:34px;font-size:12px;background:radial-gradient(circle at 30% 25%,#f3a4e8,#d24fc0)">A</div><div><div class="nm">AURA</div><div class="oi">listed 5h · $0.904</div></div></div>
-          <div class="spark"><svg viewBox="0 0 90 26" preserveAspectRatio="none"><polyline points="0,8 12,10 24,9 36,14 48,12 60,17 72,15 90,20" fill="none" stroke="#ff4d6d" stroke-width="1.8"/></svg></div>
-          <div class="rend"><div class="p">$0.904</div><div class="c neg">-9%</div></div>
-          <button class="act l">Long</button>
-        </div>
-
-        <div class="gap"></div>
-        <div class="sectitle"><span class="l">Bleeding</span><span class="r">bounce plays</span></div>
-        <div class="row">
-          <div class="rtok"><div class="tok-ic" style="width:34px;height:34px;font-size:12px;background:radial-gradient(circle at 30% 25%,#a9b0ff,#6c78e8)">W</div><div><div class="nm">WIF</div><div class="oi">$1.55 · $9.2M OI</div></div></div>
-          <div class="spark"><svg viewBox="0 0 90 26" preserveAspectRatio="none"><polyline points="0,6 12,9 24,8 36,13 48,15 60,14 72,19 90,21" fill="none" stroke="#ff4d6d" stroke-width="1.8"/></svg></div>
-          <div class="rend"><div class="p">$1.55</div><div class="c neg">-27%</div></div>
-          <button class="act l">Long</button>
-        </div>
-
-        <div class="fade"></div>
-      </div>
-
-      <div class="tabbar">
-        <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 4-4 2 2-4z"/></svg>Discover</div>
-        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-5 4 3 6-7"/><path d="M17 7h3v3"/></svg>Trade</div>
-        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Positions</div>
-        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h13a3 3 0 013 3v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h11"/><circle cx="17" cy="13" r="1.4" fill="currentColor" stroke="none"/></svg>Wallet</div>
-      </div>
-    </div></div>
-    <div class="caption">Discover home <span>· short the pump, one tap</span></div>
+  <div class="frame">
+    <!-- browser chrome -->
+    <div class="chrome">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">🔒 app.<b>allperps</b>.xyz/discover</div>
     </div>
 
-    <!-- ============ PHONE 2: TOKEN / TRADE ============ -->
-    <div class="col">
-    <div class="phone"><div class="screen">
-      <div class="dyn"></div>
-      <div class="statusbar"><span>9:41</span><span class="r">5G &nbsp; 100</span></div>
-
-      <div class="body">
-        <div class="th">
-          <div class="back">‹ Discover</div>
-          <div class="top">
-            <div class="tok-ic" style="background:radial-gradient(circle at 30% 25%,#ffe08a,#f7b733)">M</div>
-            <div class="nm">MOODENG</div>
-            <div class="px"><b>$0.4218</b><span class="pos">+240%</span></div>
-          </div>
-          <div class="bigchart">
-            <svg viewBox="0 0 300 150" preserveAspectRatio="none">
-              <defs><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25e08b" stop-opacity=".28"/><stop offset="1" stop-color="#25e08b" stop-opacity="0"/></linearGradient></defs>
-              <path d="M0,132 C25,128 35,120 55,112 C80,102 90,116 115,96 C140,78 150,88 175,64 C205,40 215,52 240,34 C265,18 280,26 300,12" fill="none" stroke="#25e08b" stroke-width="2.4" stroke-linecap="round"/>
-              <path d="M0,132 C25,128 35,120 55,112 C80,102 90,116 115,96 C140,78 150,88 175,64 C205,40 215,52 240,34 C265,18 280,26 300,12 L300,150 L0,150 Z" fill="url(#bg2)"/>
-            </svg>
-          </div>
-          <div class="rng"><div>1H</div><div>4H</div><div class="on">1D</div><div>1W</div><div>All</div></div>
-
-          <div class="lstoggle"><div>Long</div><div class="short">Short</div></div>
-
-          <div class="field">
-            <div class="lab">Size</div>
-            <div class="val">$250</div>
-            <div class="chips"><span>25</span><span>50</span><span>100</span><span style="color:var(--violet)">Max</span></div>
-          </div>
-
-          <div class="kv"><span>Leverage</span><b>3.5x</b></div>
-          <div class="kv"><span>Entry</span><b>$0.4218</b></div>
-          <div class="kv"><span>Liquidation</span><b class="liq">$0.5740</b></div>
-          <div class="kv"><span>Max loss</span><b>$250 · isolated</b></div>
-
-          <button class="btn short" style="width:100%;margin-top:14px;padding:14px">Short MOODENG · 3.5x</button>
-        </div>
+    <!-- app nav -->
+    <div class="nav">
+      <div class="logo">All <span class="z">Perps</span></div>
+      <div class="navlinks"><a class="on">Discover</a><a>Trade</a><a>Portfolio</a></div>
+      <div class="navsearch">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5e6276" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        Search ticker or paste a mint
       </div>
-    </div></div>
-    <div class="caption">Token &amp; trade <span>· liquidation shown, isolated</span></div>
+      <div class="navright">
+        <span class="bal">Balance <b>$1,240</b></span>
+        <button class="deposit">Deposit</button>
+        <div class="pfp"><i></i></div>
+      </div>
     </div>
 
-  </div>
+    <div class="page">
+      <div class="pagehead">
+        <div><h1>Discover</h1><p>What is worth trading right now. 14 markets moving.</p></div>
+        <div class="filters"><div class="on">Hot</div><div>New</div><div>Movers</div><div>Picks</div></div>
+      </div>
 
+      <!-- hot strip -->
+      <div class="strip">
+        <div class="hot">
+          <span class="badge">Running hot</span>
+          <div class="head"><div class="tic" style="background:radial-gradient(circle at 30% 25%,#ffe08a,#f7b733)">M</div><div><div class="nm">MOODENG</div><div class="px">$0.4218 · $2.1M OI</div></div><div class="chg pos">+240%</div></div>
+          <div class="chart"><svg viewBox="0 0 260 38" preserveAspectRatio="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25e08b" stop-opacity=".3"/><stop offset="1" stop-color="#25e08b" stop-opacity="0"/></linearGradient></defs><path d="M0,34 L30,32 60,33 90,24 120,26 150,15 180,18 210,9 240,11 260,4" fill="none" stroke="#25e08b" stroke-width="2"/><path d="M0,34 L30,32 60,33 90,24 120,26 150,15 180,18 210,9 240,11 260,4 L260,38 L0,38 Z" fill="url(#g1)"/></svg></div>
+          <div class="btns"><button class="mini short">Short</button><button class="mini long">Long</button></div>
+        </div>
+        <div class="hot">
+          <span class="badge">Running hot</span>
+          <div class="head"><div class="tic" style="background:radial-gradient(circle at 30% 25%,#a9b0ff,#6c78e8)">P</div><div><div class="nm">PENGU</div><div class="px">$0.0612 · $4.8M OI</div></div><div class="chg pos">+112%</div></div>
+          <div class="chart"><svg viewBox="0 0 260 38" preserveAspectRatio="none"><path d="M0,30 L30,31 60,26 90,28 120,20 150,23 180,14 210,16 240,8 260,10" fill="none" stroke="#25e08b" stroke-width="2"/><path d="M0,30 L30,31 60,26 90,28 120,20 150,23 180,14 210,16 240,8 260,10 L260,38 L0,38 Z" fill="url(#g1)"/></svg></div>
+          <div class="btns"><button class="mini short">Short</button><button class="mini long">Long</button></div>
+        </div>
+        <div class="hot">
+          <span class="badge">Running hot</span>
+          <div class="head"><div class="tic" style="background:radial-gradient(circle at 30% 25%,#ffb08a,#f77433)">F</div><div><div class="nm">FART</div><div class="px">$0.0081 · $780k OI</div></div><div class="chg pos">+88%</div></div>
+          <div class="chart"><svg viewBox="0 0 260 38" preserveAspectRatio="none"><path d="M0,32 L30,28 60,30 90,22 120,25 150,17 180,20 210,12 240,15 260,9" fill="none" stroke="#25e08b" stroke-width="2"/><path d="M0,32 L30,28 60,30 90,22 120,25 150,17 180,20 210,12 240,15 260,9 L260,38 L0,38 Z" fill="url(#g1)"/></svg></div>
+          <div class="btns"><button class="mini short">Short</button><button class="mini long">Long</button></div>
+        </div>
+      </div>
+
+      <!-- main grid -->
+      <div class="grid">
+        <div class="panel">
+          <div class="ph"><h3>All markets</h3><span class="sub">sorted by 24h volume</span></div>
+          <table>
+            <thead><tr><th>Market</th><th class="r">Price</th><th class="r">24h</th><th class="r">Volume</th><th class="r">Last 7d</th><th class="r">Trade</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#ffe08a,#f7b733)">M</div><div><div class="nm">MOODENG <span class="tag hot">HOT</span></div><div class="oi">$2.1M OI</div></div></div></td>
+                <td class="num">$0.4218</td><td class="num"><span class="chg pos">+240%</span></td><td class="num">$18.4M</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,24 16,22 32,23 48,15 64,17 80,8 96,4" fill="none" stroke="#25e08b" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#a9b0ff,#6c78e8)">P</div><div><div class="nm">PENGU <span class="tag hot">HOT</span></div><div class="oi">$4.8M OI</div></div></div></td>
+                <td class="num">$0.0612</td><td class="num"><span class="chg pos">+112%</span></td><td class="num">$31.0M</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,22 16,23 32,18 48,20 64,12 80,14 96,6" fill="none" stroke="#25e08b" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#7cf0c0,#25c07a)">G</div><div><div class="nm">GORK <span class="tag new">NEW</span></div><div class="oi">listed 2h ago</div></div></div></td>
+                <td class="num">$0.1320</td><td class="num"><span class="chg pos">+31%</span></td><td class="num">$1.2M</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,20 16,18 32,19 48,13 64,15 80,9 96,7" fill="none" stroke="#25e08b" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#a9b0ff,#6c78e8)">W</div><div><div class="nm">WIF</div><div class="oi">$9.2M OI</div></div></div></td>
+                <td class="num">$1.5500</td><td class="num"><span class="chg neg">-27%</span></td><td class="num">$22.7M</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,7 16,10 32,9 48,15 64,17 80,16 96,22" fill="none" stroke="#ff4d6d" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#f3a4e8,#d24fc0)">A</div><div><div class="nm">AURA <span class="tag new">NEW</span></div><div class="oi">listed 5h ago</div></div></div></td>
+                <td class="num">$0.9040</td><td class="num"><span class="chg neg">-9%</span></td><td class="num">$640k</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,9 16,11 32,10 48,14 64,13 80,17 96,18" fill="none" stroke="#ff4d6d" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:radial-gradient(circle at 30% 25%,#8affc0,#25e08b)">B</div><div><div class="nm">BONK</div><div class="oi">$12.4M OI</div></div></div></td>
+                <td class="num">$0.000021</td><td class="num"><span class="chg pos">+6%</span></td><td class="num">$40.1M</td>
+                <td><div class="tspark" style="margin-left:auto"><svg viewBox="0 0 96 30" preserveAspectRatio="none"><polyline points="0,18 16,16 32,17 48,14 64,15 80,13 96,12" fill="none" stroke="#25e08b" stroke-width="1.8"/></svg></div></td>
+                <td><div class="tactions"><button class="act l">Long</button><button class="act s">Short</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- sidebar -->
+        <div class="side">
+          <div class="balcard">
+            <div class="lab">Available to trade</div>
+            <div class="big">$1,240.00</div>
+            <div class="row2"><button class="dep">Deposit</button><button class="wd">Withdraw</button></div>
+          </div>
+          <div class="panel">
+            <div class="ph"><h3>Just made shortable</h3><span class="sub">new</span></div>
+            <div class="slist">
+              <div class="srow"><div class="tic" style="width:28px;height:28px;font-size:11px;background:radial-gradient(circle at 30% 25%,#7cf0c0,#25c07a)">G</div><div><div class="nm">GORK</div><div class="meta">listed 2h ago</div></div><div class="chg pos">+31%</div></div>
+              <div class="srow"><div class="tic" style="width:28px;height:28px;font-size:11px;background:radial-gradient(circle at 30% 25%,#f3a4e8,#d24fc0)">A</div><div><div class="nm">AURA</div><div class="meta">listed 5h ago</div></div><div class="chg neg">-9%</div></div>
+              <div class="srow"><div class="tic" style="width:28px;height:28px;font-size:11px;background:radial-gradient(circle at 30% 25%,#ffd08a,#f7a733)">R</div><div><div class="nm">RETARDIO</div><div class="meta">listed 8h ago</div></div><div class="chg pos">+14%</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="ph"><h3>Our picks</h3><span class="sub">curated</span></div>
+            <div class="slist">
+              <div class="srow"><div class="tic" style="width:28px;height:28px;font-size:11px;background:radial-gradient(circle at 30% 25%,#8affc0,#25e08b)">B</div><div><div class="nm">BONK</div><div class="meta">deep liquidity</div></div><div class="chg pos">+6%</div></div>
+              <div class="srow"><div class="tic" style="width:28px;height:28px;font-size:11px;background:radial-gradient(circle at 30% 25%,#a9b0ff,#6c78e8)">W</div><div><div class="nm">WIF</div><div class="meta">bounce watch</div></div><div class="chg neg">-27%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
