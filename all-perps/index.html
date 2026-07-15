@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Perps — Prototypes</title>
+<style>
+  :root{--bg:#07080c;--card:#0f1118;--glass:rgba(255,255,255,.04);--line:rgba(255,255,255,.08);--txt:#f5f6fb;--dim:#9498ab;--green:#25e08b;--red:#ff4d6d;--violet:#7b6cff}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;background:
+    radial-gradient(800px 460px at 20% -5%,rgba(123,108,255,.16),transparent 60%),
+    radial-gradient(700px 460px at 90% 10%,rgba(37,224,139,.08),transparent 55%),var(--bg);
+    color:var(--txt);font-family:-apple-system,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 22px}
+  .logo{font-weight:800;font-size:20px;letter-spacing:-.4px;margin-bottom:6px}
+  .logo .z{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  h1{font-size:34px;font-weight:800;letter-spacing:-.8px;text-align:center}
+  .sub{color:var(--dim);font-size:14.5px;margin:10px 0 40px;text-align:center;max-width:520px;line-height:1.55}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:760px}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;transition:transform .12s ease,border-color .15s ease;box-shadow:0 30px 60px -34px #000}
+  a.card:hover{transform:translateY(-3px);border-color:rgba(123,108,255,.5)}
+  .card .num{font-family:"SF Mono",Menlo,monospace;font-size:12px;color:var(--violet);font-weight:700}
+  .card h2{font-size:19px;font-weight:800;margin:10px 0 6px}
+  .card p{color:var(--dim);font-size:13px;line-height:1.5}
+  .card .go{margin-top:16px;display:inline-flex;align-items:center;gap:6px;color:var(--txt);font-weight:700;font-size:13px}
+  .card .go .arw{color:var(--violet)}
+  .flow{margin-top:34px;color:var(--dim);font-size:12.5px;text-align:center}
+  .flow b{color:var(--txt)}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:rgba(37,224,139,.13);color:var(--green);margin-left:8px;vertical-align:middle}
+</style>
+</head>
+<body>
+  <div class="logo">All <span class="z">Perps</span></div>
+  <h1>Product Prototypes</h1>
+  <p class="sub">Clickable, web first prototypes of the All Perps consumer app. Interactive UI only, no live trading. Best viewed on desktop.</p>
+
+  <div class="cards">
+    <a class="card" href="onboarding.html">
+      <span class="num">01</span><span class="tag">Interactive</span>
+      <h2>Onboarding</h2>
+      <p>Landing, login with no seed phrase, and funding with USDC. Click a login button, fund, and flow straight into the app.</p>
+      <span class="go">Open onboarding <span class="arw">→</span></span>
+    </a>
+    <a class="card" href="discover.html">
+      <span class="num">02</span><span class="tag">Interactive</span>
+      <h2>Discover</h2>
+      <p>The home screen. Working filters, search, sortable markets, a live board, and a full Long or Short trade sheet.</p>
+      <span class="go">Open discover <span class="arw">→</span></span>
+    </a>
+  </div>
+
+  <div class="flow">Suggested path: <b>Onboarding</b> → fund → <b>Start trading</b> → <b>Discover</b> → tap Short on the top mover.</div>
+</body>
+</html>
