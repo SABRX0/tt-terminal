@@ -101,6 +101,7 @@
       <div class="navright"><span class="bal">Balance <b id="bal">$1,240</b></span><button class="deposit">Deposit</button><div class="pfp"><i></i></div></div>
     </div>
     <div class="page">
+      <div id="discoverView">
       <div class="heroband" id="hero"></div>
       <div class="toolbar">
         <div class="filters" id="filters"><div class="on" data-f="all">Trending</div><div data-f="hot">Hot</div><div data-f="new">New</div><div data-f="movers">Movers</div><div data-f="picks">Liquid</div></div>
@@ -124,6 +125,18 @@
         </div>
       </div>
       <div style="color:var(--dimmer);font-size:11px;margin-top:14px">Live prices, 24h change and volume from DexScreener. Sparklines are indicative of 24h direction. Trading is a prototype, no real orders are placed.</div>
+      </div><!-- /discoverView -->
+
+      <div id="portfolioView" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+          <div><h1 style="font-size:26px;font-weight:800;letter-spacing:-.6px">Portfolio</h1><div style="color:var(--dim);font-size:13px;margin-top:4px">Your open positions with live PnL off real prices. Prototype, no real funds.</div></div>
+          <div class="status" id="pfSummary"></div>
+        </div>
+        <div class="panel">
+          <table><thead><tr><th>Market</th><th class="r">Side</th><th class="r">Size</th><th class="r">Entry</th><th class="r">Mark</th><th class="r">Liq.</th><th class="r">PnL</th><th class="r">Close</th></tr></thead><tbody id="pfRows"></tbody></table>
+          <div class="empty" id="pfEmpty">No open positions yet. Go to Discover and Short something.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -185,7 +198,7 @@
     const best={};
     pairs.forEach(p=>{if(p.chainId!=='solana'||!p.priceUsd)return;const a=p.baseToken.address;if(!best[a]||(p.liquidity?.usd||0)>(best[a].liquidity?.usd||0))best[a]=p;});
     return Object.values(best).map((p,i)=>{const pc=p.priceChange||{},tx=(p.txns&&p.txns.h24)||{};return {
-      sym:p.baseToken.symbol,name:p.baseToken.name,c:PAL[i%PAL.length],pick:false,
+      sym:p.baseToken.symbol,name:p.baseToken.name,mint:p.baseToken.address,c:PAL[i%PAL.length],pick:false,
       price:parseFloat(p.priceUsd),chg:parseFloat(pc.h24??0),chg1:parseFloat(pc.h1??0),chg6:parseFloat(pc.h6??0),
       vol:p.volume?.h24||0,liq:p.liquidity?.usd||0,mc:p.marketCap||p.fdv||0,fdv:p.fdv||0,
       buys:tx.buys||0,sells:tx.sells||0,created:p.pairCreatedAt||0,tags:[]};});
@@ -233,10 +246,11 @@
     if(filter==='picks')return t.pick;
     return true;
   }
-  function sideRow(t,meta){return `<div class="srow" data-t="${t.sym}" data-p="${t.price}"><div class="tic" style="width:28px;height:28px;font-size:11px;background:${G(t.c[0],t.c[1])}">${t.sym[0]}</div><div><div class="nm">${t.sym}</div><div class="meta">${meta}</div></div><div class="chg ${t.chg>=0?'pos':'neg'}">${fchg(t.chg)}</div></div>`;}
+  function sideRow(t,meta){return `<div class="srow" data-t="${t.sym}" data-p="${t.price}" data-m="${t.mint}"><div class="tic" style="width:28px;height:28px;font-size:11px;background:${G(t.c[0],t.c[1])}">${t.sym[0]}</div><div><div class="nm">${t.sym}</div><div class="meta">${meta}</div></div><div class="chg ${t.chg>=0?'pos':'neg'}">${fchg(t.chg)}</div></div>`;}
 
   function render(){
     if(!M.length)return;
+    M.forEach(t=>{if(t.mint&&t.price)priceCache[t.mint]=t.price;});
     const top=[...M].sort((a,b)=>b.chg-a.chg)[0];
     const tc=top.chg>=0?'pos':'neg';
     $('#hero').innerHTML=`<div style="display:flex;align-items:center">
@@ -245,7 +259,7 @@
       <div><div class="hb-nm">${top.sym}</div><div class="hb-sub">${fp(top.price)} · ${fM(top.liq)} liq · ${fM(top.vol)} 24h vol</div></div></div></div>
       <div class="hb-right"><div class="hb-chart">${spark(top.chg,7).replace('viewBox="0 0 88 30"','viewBox="0 0 220 56"').replace('stroke-width="1.8"','stroke-width="2.2"')}</div>
       <div class="hb-chg ${tc}">${fchg(top.chg)}<small>24h</small></div>
-      <div class="hb-btns"><button class="b-short" data-t="${top.sym}" data-p="${top.price}" data-side="Short">Short</button><button class="b-long" data-t="${top.sym}" data-p="${top.price}" data-side="Long">Long</button></div></div></div>`;
+      <div class="hb-btns"><button class="b-short" data-t="${top.sym}" data-p="${top.price}" data-m="${top.mint}" data-side="Short">Short</button><button class="b-long" data-t="${top.sym}" data-p="${top.price}" data-m="${top.mint}" data-side="Long">Long</button></div></div></div>`;
 
     let list=M.filter(pass).sort((a,b)=>{let av=a[sortKey],bv=b[sortKey];if(sortKey==='sym')return sortDir*a.sym.localeCompare(b.sym);return sortDir*(av-bv);});
     $('#count')&&($('#count').textContent=list.length+(usingFallback?' markets':' trending markets'));
@@ -253,14 +267,14 @@
     $('#rows').innerHTML=list.map(t=>{
       const heat=Math.min(100,Math.abs(t.chg)*2.4);
       const tag=t.tags.includes('hot')?'<span class="tag hot">HOT</span>':t.tags.includes('new')?'<span class="tag new">NEW</span>':'';
-      return `<tr data-t="${t.sym}" data-p="${t.price}">
+      return `<tr data-t="${t.sym}" data-p="${t.price}" data-m="${t.mint}">
         <td><div class="mkt"><div class="tic" style="width:32px;height:32px;font-size:12px;background:${G(t.c[0],t.c[1])}">${t.sym[0]}</div><div><div class="nm">${t.sym}${tag}</div><div class="oi">${fM(t.liq)} liq</div></div></div></td>
         <td class="num">${fp(t.price)}</td>
         <td class="num"><span class="chg ${t.chg>=0?'pos':'neg'}">${fchg(t.chg)}</span></td>
         <td class="num">${fM(t.vol)}</td>
         <td class="num"><span class="heat"><i style="width:${heat}%"></i></span></td>
         <td>${spark(t.chg,t.sym.length+Math.round(Math.abs(t.chg)))}</td>
-        <td><div class="tactions"><button class="act l" data-t="${t.sym}" data-p="${t.price}" data-side="Long">Long</button><button class="act s" data-t="${t.sym}" data-p="${t.price}" data-side="Short">Short</button></div></td>
+        <td><div class="tactions"><button class="act l" data-t="${t.sym}" data-p="${t.price}" data-m="${t.mint}" data-side="Long">Long</button><button class="act s" data-t="${t.sym}" data-p="${t.price}" data-m="${t.mint}" data-side="Short">Short</button></div></td>
       </tr>`;}).join('');
     $('#gainlist').innerHTML=[...M].sort((a,b)=>b.chg-a.chg).slice(0,3).map(t=>sideRow(t,'24h gain')).join('');
     $('#picklist').innerHTML=M.filter(t=>t.pick).map(t=>sideRow(t,'deep liquidity')).join('');
@@ -275,7 +289,7 @@
     $('#status').innerHTML='<span style="color:var(--dimmer)">searching Solana…</span>';
     searchTimer=setTimeout(runSearch,350);
   });
-  $$('.navlinks a').forEach(a=>a.onclick=()=>{$$('.navlinks a').forEach(x=>x.classList.remove('on'));a.classList.add('on');});
+  $$('.navlinks a').forEach(a=>a.onclick=()=>{$$('.navlinks a').forEach(x=>x.classList.remove('on'));a.classList.add('on');const pf=a.textContent.trim()==='Portfolio';$('#discoverView').style.display=pf?'none':'';$('#portfolioView').style.display=pf?'':'none';if(pf){renderPositions();refreshPositionPrices();}});
 
   // coin detail popup
   const dov=$('#dov');
@@ -292,32 +306,74 @@
       st('24h volume',fM(t.vol))+st('Liquidity',fM(t.liq))+
       st('Market cap',t.mc?fM(t.mc):'—')+st('FDV',t.fdv?fM(t.fdv):'—')+
       st('Buys 24h',(t.buys||0).toLocaleString(),'pos')+st('Sells 24h',(t.sells||0).toLocaleString(),'neg');
-    $('#dShort').onclick=()=>{dov.classList.remove('on');openTrade(t.sym,t.price,'Short');};
-    $('#dLong').onclick=()=>{dov.classList.remove('on');openTrade(t.sym,t.price,'Long');};
+    $('#dShort').onclick=()=>{dov.classList.remove('on');openTrade(t.sym,t.price,'Short',t.mint);};
+    $('#dLong').onclick=()=>{dov.classList.remove('on');openTrade(t.sym,t.price,'Long',t.mint);};
     dov.classList.add('on');
   }
   $('#dX').onclick=()=>dov.classList.remove('on');
   dov.addEventListener('click',e=>{if(e.target===dov)dov.classList.remove('on');});
 
-  const ov=$('#ov');let side='Short',price=1,token='TOKEN',size=250,lev=3.5;
+  const ov=$('#ov');let side='Short',price=1,token='TOKEN',size=250,lev=3.5,curMint='';
   function recalc(){$('#tbLevV').textContent=lev+'x';$('#tbSize').textContent='$'+size;$('#tbEntry').textContent=fp(price);
     const liq=side==='Short'?price*(1+.9/lev):price*(1-.9/lev);$('#tbLiq').textContent=fp(liq);$('#tbLoss').textContent='$'+size+' · isolated';
     const go=$('#tbGo');go.textContent=side+' '+token+' · '+lev+'x';go.style.background=side==='Short'?'linear-gradient(180deg,#ff5c7a,#e8324f)':'linear-gradient(180deg,#2fe090,#12b56b)';
     $$('.sidetog div').forEach(d=>d.classList.toggle('on',d.dataset.side===side));}
-  function openTrade(tk,pr,sd){token=tk;price=+pr;side=sd;size=250;lev=3.5;$('#tbNm').textContent=tk;$('#tbIc').textContent=tk[0];$('#tbLev').value=3.5;$$('.tchips span').forEach(x=>x.classList.toggle('on',x.dataset.s==='250'));recalc();ov.classList.add('on');}
+  function openTrade(tk,pr,sd,mint){token=tk;price=+pr;side=sd;curMint=mint||'';size=250;lev=3.5;$('#tbNm').textContent=tk;$('#tbIc').textContent=tk[0];$('#tbLev').value=3.5;$$('.tchips span').forEach(x=>x.classList.toggle('on',x.dataset.s==='250'));recalc();ov.classList.add('on');}
   document.body.addEventListener('click',e=>{
     const b=e.target.closest('[data-side]');
-    if(b&&b.dataset.t){e.stopPropagation();dov.classList.remove('on');openTrade(b.dataset.t,b.dataset.p,b.dataset.side);return;}
+    if(b&&b.dataset.t){e.stopPropagation();dov.classList.remove('on');openTrade(b.dataset.t,b.dataset.p,b.dataset.side,b.dataset.m);return;}
     const row=e.target.closest('tr[data-t], .srow[data-t]');if(row)openDetail(row.dataset.t);
   });
   $('#tbX').onclick=()=>ov.classList.remove('on');ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');});
   $$('.sidetog div').forEach(d=>d.onclick=()=>{side=d.dataset.side;recalc();});
   $$('.tchips span').forEach(s=>s.onclick=()=>{size=+s.dataset.s;$$('.tchips span').forEach(x=>x.classList.toggle('on',x===s));recalc();});
   $('#tbLev').oninput=e=>{lev=+e.target.value;recalc();};
-  $('#tbGo').onclick=()=>{ov.classList.remove('on');const t=$('#toast');$('#toastMsg').textContent=(side==='Short'?'Shorted ':'Longed ')+token+' · $'+size+' at '+lev+'x';t.querySelector('.dot').style.background=side==='Short'?'#ff4d6d':'#25e08b';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600);const nb=1240-size;$('#bal').textContent='$'+nb.toLocaleString();$('#bal2').textContent='$'+nb.toLocaleString()+'.00';};
+  $('#tbGo').onclick=()=>{ov.classList.remove('on');
+    positions.push({id:''+Date.now()+Math.floor(Math.random()*1e4),sym:token,mint:curMint,side,size,lev,entry:price,ts:Date.now()});
+    if(curMint)priceCache[curMint]=price;
+    balance=Math.max(0,balance-size);persist();updateBal();
+    toast((side==='Short'?'Shorted ':'Longed ')+token+' · $'+size+' at '+lev+'x',side==='Short'?'#ff4d6d':'#25e08b');
+    renderPositions();};
 
+  // ===== positions / portfolio =====
+  let positions=JSON.parse(localStorage.getItem('ap_pos')||'[]');
+  let balance=+(localStorage.getItem('ap_bal')||1240);
+  let priceCache={};
+  function persist(){localStorage.setItem('ap_pos',JSON.stringify(positions));localStorage.setItem('ap_bal',balance);}
+  function updateBal(){$('#bal').textContent='$'+Math.round(balance).toLocaleString();$('#bal2').textContent='$'+balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function toast(msg,color){const t=$('#toast');$('#toastMsg').textContent=msg;t.querySelector('.dot').style.background=color||'#25e08b';t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600);}
+  function pnlOf(p){const mark=priceCache[p.mint]||p.entry;const pct=(mark-p.entry)/p.entry;const pnl=(p.side==='Long'?1:-1)*p.size*p.lev*pct;const rpct=(p.side==='Long'?1:-1)*pct*p.lev*100;return {mark,pnl,rpct};}
+  function liqOf(p){return p.side==='Short'?p.entry*(1+.9/p.lev):p.entry*(1-.9/p.lev);}
+  function renderPositions(){
+    const tb=$('#pfRows');if(!tb)return;
+    $('#pfEmpty').style.display=positions.length?'none':'block';
+    let tot=0;
+    tb.innerHTML=positions.map(p=>{const r=pnlOf(p);tot+=r.pnl;const cl=r.pnl>=0?'pos':'neg';
+      return `<tr>
+        <td><div class="mkt"><div class="tic" style="width:30px;height:30px;font-size:12px;background:${G('#8b7dff','#25e08b')}">${p.sym[0]}</div><div class="nm">${p.sym}</div></div></td>
+        <td class="num"><span class="${p.side==='Short'?'neg':'pos'}">${p.side} ${p.lev}x</span></td>
+        <td class="num">$${p.size}</td>
+        <td class="num">${fp(p.entry)}</td>
+        <td class="num">${fp(r.mark)}</td>
+        <td class="num" style="color:var(--red)">${fp(liqOf(p))}</td>
+        <td class="num"><span class="${cl}">${r.pnl>=0?'+':''}$${r.pnl.toFixed(2)} (${r.rpct>=0?'+':''}${r.rpct.toFixed(0)}%)</span></td>
+        <td class="num"><button class="act s" data-close="${p.id}">Close</button></td>
+      </tr>`;}).join('');
+    const cl=tot>=0?'pos':'neg';
+    $('#pfSummary').innerHTML=positions.length?('Open PnL <b class="'+cl+'" style="font-variant-numeric:tabular-nums">'+(tot>=0?'+':'')+'$'+tot.toFixed(2)+'</b> · '+positions.length+' position'+(positions.length!=1?'s':'')):'';
+  }
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(!b)return;const p=positions.find(x=>x.id===b.dataset.close);if(!p)return;const r=pnlOf(p);balance+=p.size+r.pnl;positions=positions.filter(x=>x.id!==p.id);persist();updateBal();renderPositions();toast('Closed '+p.sym+' · '+(r.pnl>=0?'+':'')+'$'+r.pnl.toFixed(2),r.pnl>=0?'#25e08b':'#ff4d6d');});
+  async function refreshPositionPrices(){
+    const mints=[...new Set(positions.map(p=>p.mint).filter(Boolean))];if(!mints.length)return;
+    try{const rr=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+mints.slice(0,30).join(','));const j=await rr.json();
+      const best={};(j.pairs||[]).forEach(p=>{if(p.chainId!=='solana'||!p.priceUsd)return;const a=p.baseToken.address;if(!best[a]||(p.liquidity?.usd||0)>(best[a].liquidity?.usd||0))best[a]=p;});
+      Object.values(best).forEach(p=>priceCache[p.baseToken.address]=parseFloat(p.priceUsd));
+      if($('#portfolioView')&&$('#portfolioView').style.display!=='none')renderPositions();
+    }catch(e){}
+  }
+  updateBal();renderPositions();
   fetchData();
-  setInterval(fetchData,15000);
+  setInterval(()=>{fetchData();refreshPositionPrices();},15000);
 </script>
 </body>
 </html>
