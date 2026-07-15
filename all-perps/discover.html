@@ -103,7 +103,7 @@
     <div class="page">
       <div class="heroband" id="hero"></div>
       <div class="toolbar">
-        <div class="filters" id="filters"><div class="on" data-f="all">All</div><div data-f="hot">Hot</div><div data-f="new">New</div><div data-f="movers">Movers</div><div data-f="picks">Picks</div></div>
+        <div class="filters" id="filters"><div class="on" data-f="all">Trending</div><div data-f="hot">Hot</div><div data-f="new">New</div><div data-f="movers">Movers</div><div data-f="picks">Liquid</div></div>
         <div class="status" id="status"><span class="live"><span class="d"></span>LIVE</span> <span id="count"></span></div>
       </div>
       <div class="grid">
@@ -120,7 +120,7 @@
         <div class="side">
           <div class="balcard"><div class="lab">Available to trade</div><div class="big" id="bal2">$1,240.00</div><div class="row2"><button class="dep">Deposit</button><button class="wd">Withdraw</button></div></div>
           <div class="panel"><div class="ph"><h3>Top gainers</h3><span class="sub">24h</span></div><div id="gainlist"></div></div>
-          <div class="panel"><div class="ph"><h3>Our picks</h3><span class="sub">curated</span></div><div id="picklist"></div></div>
+          <div class="panel"><div class="ph"><h3>Most liquid</h3><span class="sub">deepest markets</span></div><div id="picklist"></div></div>
         </div>
       </div>
       <div style="color:var(--dimmer);font-size:11px;margin-top:14px">Live prices, 24h change and volume from DexScreener. Sparklines are indicative of 24h direction. Trading is a prototype, no real orders are placed.</div>
@@ -191,15 +191,18 @@
       buys:tx.buys||0,sells:tx.sells||0,created:p.pairCreatedAt||0,tags:[]};});
   }
   function applyTags(list){const now=Date.now();list.forEach(t=>{t.tags=[];if(t.created&&now-t.created<45*864e5)t.tags.push('new');});[...list].sort((a,b)=>b.vol-a.vol).slice(0,3).forEach(t=>t.tags.push('hot'));return list;}
-  const PICKS=['wif','$wif','bonk','fartcoin'];
   async function fetchData(){
     try{
-      const ids=TOKENS.map(t=>t.mint).join(',');
-      const res=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+ids);
+      // dynamic trending Solana tokens from DexScreener boosts, plus blue-chip seeds for depth
+      let boost=[];
+      try{const br=await fetch('https://api.dexscreener.com/token-boosts/top/v1');const bj=await br.json();boost=(bj||[]).filter(x=>x.chainId==='solana').map(x=>x.tokenAddress);}catch(_){}
+      const mints=[...new Set([...boost,...TOKENS.map(t=>t.mint)])].slice(0,30);
+      const res=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+mints.join(','));
       const j=await res.json();
-      let out=mapPairs(j.pairs||[]);
-      if(!out.length)throw new Error('empty');
-      out.forEach(t=>t.pick=PICKS.includes(t.sym.toLowerCase()));
+      let out=mapPairs(j.pairs||[]).filter(t=>t.liq>25000);
+      if(out.length<5)throw new Error('thin');
+      out.sort((a,b)=>b.vol-a.vol);out=out.slice(0,16);
+      [...out].sort((a,b)=>b.liq-a.liq).slice(0,3).forEach(t=>t.pick=true);
       applyTags(out);curated=out;usingFallback=false;
     }catch(e){
       if(!curated.length){curated=FALLBACK.map((t,i)=>({...t,c:PAL[i%PAL.length],chg1:0,chg6:0,mc:0,fdv:0,buys:0,sells:0,tags:i<3?['hot']:[]}));usingFallback=true;}
@@ -220,7 +223,7 @@
   function updateStatus(){
     const s=$('#status');
     if(usingFallback){s.innerHTML='<span style="color:var(--dimmer)">● sample data (feed unreachable)</span> <span id="count">'+M.length+' markets</span>';}
-    else{s.innerHTML='<span class="live"><span class="d"></span>LIVE</span> <span id="count">'+M.length+' real markets · updated just now</span>';}
+    else{s.innerHTML='<span class="live"><span class="d"></span>LIVE</span> <span id="count">'+M.length+' trending markets</span>';}
   }
 
   function pass(t){
@@ -245,7 +248,7 @@
       <div class="hb-btns"><button class="b-short" data-t="${top.sym}" data-p="${top.price}" data-side="Short">Short</button><button class="b-long" data-t="${top.sym}" data-p="${top.price}" data-side="Long">Long</button></div></div></div>`;
 
     let list=M.filter(pass).sort((a,b)=>{let av=a[sortKey],bv=b[sortKey];if(sortKey==='sym')return sortDir*a.sym.localeCompare(b.sym);return sortDir*(av-bv);});
-    $('#count')&&($('#count').textContent=list.length+(usingFallback?' markets':' real markets · updated just now'));
+    $('#count')&&($('#count').textContent=list.length+(usingFallback?' markets':' trending markets'));
     $('#empty').style.display=list.length?'none':'block';
     $('#rows').innerHTML=list.map(t=>{
       const heat=Math.min(100,Math.abs(t.chg)*2.4);
@@ -260,7 +263,7 @@
         <td><div class="tactions"><button class="act l" data-t="${t.sym}" data-p="${t.price}" data-side="Long">Long</button><button class="act s" data-t="${t.sym}" data-p="${t.price}" data-side="Short">Short</button></div></td>
       </tr>`;}).join('');
     $('#gainlist').innerHTML=[...M].sort((a,b)=>b.chg-a.chg).slice(0,3).map(t=>sideRow(t,'24h gain')).join('');
-    $('#picklist').innerHTML=M.filter(t=>t.pick).map(t=>sideRow(t,'curated')).join('');
+    $('#picklist').innerHTML=M.filter(t=>t.pick).map(t=>sideRow(t,'deep liquidity')).join('');
     $('#arChg').style.opacity=sortKey==='chg'?1:.4;$('#arVol').style.opacity=sortKey==='vol'?1:.4;
   }
 
