@@ -57,6 +57,24 @@
   .feat .t{font-weight:700;font-size:13px}
   .feat .d{color:var(--dim);font-size:11.5px;margin-top:1px}
 
+  /* product preview showcase */
+  .showcase{margin-top:28px;position:relative;width:352px;max-width:100%}
+  .glowbg{position:absolute;inset:-24px -16px;background:radial-gradient(320px 200px at 45% 45%,rgba(255,77,109,.20),transparent 70%);z-index:0}
+  .scard{position:relative;z-index:1;background:linear-gradient(150deg,rgba(255,77,109,.15),rgba(15,17,24,.35) 60%),var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;box-shadow:0 30px 55px -22px rgba(255,77,109,.5)}
+  .scard .sh{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .scard .hb{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--red);background:var(--redsoft);padding:3px 8px;border-radius:6px}
+  .scard .hint{color:var(--dim);font-size:10.5px;font-weight:600}
+  .scard .mn{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+  .scard .nm2{font-weight:800;font-size:16px}
+  .scard .px2{color:var(--dim);font-size:11px;font-variant-numeric:tabular-nums}
+  .scard .chg2{margin-left:auto;font-size:19px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
+  .scard .ch{height:44px;margin:8px 0 12px}
+  .scard .ch svg{width:100%;height:100%;display:block}
+  .scard .bt{display:flex;gap:8px}
+  .scard .bt button{flex:1;border:none;border-radius:11px;padding:10px;font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
+  .scard .bt .s{background:linear-gradient(180deg,#ff5c7a,#e8324f);color:#fff}
+  .scard .bt .l{background:var(--greensoft);color:var(--green);border:1px solid rgba(37,224,139,.28)}
+
   .right{padding:40px 44px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--line2);background:rgba(9,10,15,.4)}
   .logincard{width:100%;max-width:352px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 24px;box-shadow:0 30px 60px -30px rgba(0,0,0,.7)}
   .logincard h2{font-size:19px;font-weight:800;letter-spacing:-.3px}
@@ -127,6 +145,25 @@
           <span class="eyebrow">◆ Permissionless perps on Solana</span>
           <h1>Short anything.</h1>
           <p class="sub">Long or short fast moving Solana tokens the moment they launch.</p>
+          <div class="showcase">
+            <div class="glowbg"></div>
+            <div class="scard">
+              <div class="sh"><span class="hb">Running hot</span><span class="hint">up 240% today · short the pump?</span></div>
+              <div class="mn">
+                <div class="tic" style="width:38px;height:38px;font-size:14px;background:radial-gradient(circle at 30% 25%,#ffe08a,#f7b733)">M</div>
+                <div><div class="nm2">MOODENG</div><div class="px2">$0.4218 · $2.1M OI</div></div>
+                <div class="chg2">+240%</div>
+              </div>
+              <div class="ch">
+                <svg viewBox="0 0 320 44" preserveAspectRatio="none">
+                  <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25e08b" stop-opacity=".32"/><stop offset="1" stop-color="#25e08b" stop-opacity="0"/></linearGradient></defs>
+                  <path d="M0,40 L32,38 64,39 96,30 128,32 160,20 192,23 224,12 256,15 288,6 320,3" fill="none" stroke="#25e08b" stroke-width="2"/>
+                  <path d="M0,40 L32,38 64,39 96,30 128,32 160,20 192,23 224,12 256,15 288,6 320,3 L320,44 L0,44 Z" fill="url(#sg)"/>
+                </svg>
+              </div>
+              <div class="bt"><button class="s">Short</button><button class="l">Long</button></div>
+            </div>
+          </div>
         </div>
         <div class="right">
           <div class="logincard">
